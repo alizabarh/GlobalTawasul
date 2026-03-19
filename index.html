@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Majra - منصة تواصل اجتماعي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-card: #16181c;
+            --border: #2f3336;
+            --text-muted: #71767b;
+            --primary: #1d9bf0;
+            --success: #00ba7c;
+            --danger: #f91880;
+        }
+
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: var(--bg-main);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .custom-border {
+            border-color: var(--border);
+        }
+
+        .hover-bg:hover {
+            background-color: rgba(231, 233, 234, 0.1);
+        }
+
+        .tweet-input:focus,
+        .search-input:focus,
+        .modal-input:focus {
+            outline: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .glass {
+            backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .pulse-ring {
+            animation: pulseRing 1.8s ease-out infinite;
+        }
+
+        @keyframes pulseRing {
+            0% { transform: scale(0.95); opacity: 1; }
+            70% { transform: scale(1.15); opacity: 0.2; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+
+        #splash-screen {
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-active {
+            color: #ffffff;
+            font-weight: 700;
+            border-bottom: 4px solid var(--primary);
+        }
+
+        .hidden-view {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <div id="splash-screen" class="fixed inset-0 bg-black flex flex-col items-center justify-center gap-6">
+        <div class="relative">
+            <div class="absolute inset-0 rounded-full border border-white/30 pulse-ring"></div>
+            <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="w-10 h-10 fill-white animate-pulse">
+                    <g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g>
+                </svg>
+            </div>
+        </div>
+        <p class="text-sm text-gray-400">جاري تهيئة المنصة...</p>
+    </div>
+
+    <div id="auth-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center px-4">
+        <div class="w-full max-w-md bg-[#0f1115] border custom-border rounded-2xl p-6 fade-in">
+            <h2 class="text-2xl font-black mb-2">أهلاً بك في Majra</h2>
+            <p class="text-sm text-gray-400 mb-6">أنشئ حسابك التجريبي للبدء.</p>
+            <div class="space-y-3">
+                <input id="auth-name" type="text" placeholder="الاسم الكامل" class="modal-input bg-black border custom-border w-full rounded-xl px-4 py-3 focus:border-[#1d9bf0]">
+                <input id="auth-username" type="text" placeholder="اسم المستخدم (بدون @)" class="modal-input bg-black border custom-border w-full rounded-xl px-4 py-3 focus:border-[#1d9bf0]">
+                <textarea id="auth-bio" rows="3" placeholder="نبذة قصيرة" class="modal-input bg-black border custom-border w-full rounded-xl px-4 py-3 resize-none focus:border-[#1d9bf0]"></textarea>
+                <button id="auth-save-btn" class="w-full bg-[#1d9bf0] hover:bg-[#178bd6] transition px-4 py-3 rounded-xl font-bold">ابدأ الآن</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1400px] mx-auto flex min-h-screen">
+        <header class="w-20 xl:w-72 sticky top-0 h-screen flex flex-col px-2 border-l custom-border">
+            <div class="p-3 mb-2">
+                <div class="w-10 h-10 rounded-full hover-bg flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" class="w-8 h-8 fill-white">
+                        <g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g>
+                    </svg>
+                </div>
+            </div>
+
+            <nav class="flex-1 space-y-1" id="main-nav">
+                <button data-view="home-view" class="nav-btn flex items-center gap-4 p-3 text-xl font-bold rounded-full hover-bg w-max xl:pr-4 xl:pl-8">
+                    <i data-lucide="home"></i>
+                    <span class="hidden xl:inline">الرئيسية</span>
+                </button>
+                <button data-view="explore-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8">
+                    <i data-lucide="search"></i>
+                    <span class="hidden xl:inline">استكشف</span>
+                </button>
+                <button data-view="notifications-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8 relative">
+                    <i data-lucide="bell"></i>
+                    <span class="hidden xl:inline">التنبيهات</span>
+                    <span id="notif-badge" class="absolute xl:static top-1 right-1 xl:mr-2 text-[10px] bg-[#1d9bf0] px-1.5 py-0.5 rounded-full hidden">0</span>
+                </button>
+                <button data-view="messages-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8">
+                    <i data-lucide="mail"></i>
+                    <span class="hidden xl:inline">الرسائل</span>
+                </button>
+                <button data-view="profile-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8">
+                    <i data-lucide="user"></i>
+                    <span class="hidden xl:inline">الملف الشخصي</span>
+                </button>
+                <button data-view="bookmarks-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8">
+                    <i data-lucide="bookmark"></i>
+                    <span class="hidden xl:inline">المحفوظات</span>
+                </button>
+            </nav>
+
+            <button id="quick-post-btn" class="bg-[#1d9bf0] text-white font-bold text-lg p-3 xl:p-4 rounded-full mt-4 mb-8 xl:w-[90%] flex justify-center items-center hover:brightness-110 transition">
+                <span class="hidden xl:inline">انشر</span>
+                <i data-lucide="plus" class="xl:hidden"></i>
+            </button>
+
+            <div id="account-card" class="mb-4 p-3 rounded-full hover-bg flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div id="account-avatar" class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center font-bold">م</div>
+                    <div class="hidden xl:block text-right">
+                        <div id="account-name" class="font-bold text-sm">مستخدم تجريبي</div>
+                        <div id="account-username" class="text-gray-500 text-xs">@demo_user</div>
+                    </div>
+                </div>
+                <i data-lucide="more-horizontal" class="hidden xl:block"></i>
+            </div>
+        </header>
+
+        <main class="flex-1 border-l custom-border min-h-screen">
+            <div class="sticky top-0 glass z-20 border-b custom-border">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <h1 id="view-title" class="text-xl font-bold">الرئيسية</h1>
+                    <button id="refresh-feed" class="text-[#1d9bf0] hover:text-white transition"><i data-lucide="sparkles"></i></button>
+                </div>
+                <div id="home-tabs" class="flex">
+                    <button data-filter="all" class="feed-tab flex-1 text-center py-4 hover-bg cursor-pointer tab-active">لك</button>
+                    <button data-filter="following" class="feed-tab flex-1 text-center py-4 text-gray-500 hover-bg cursor-pointer">متابعة</button>
+                </div>
+            </div>
+
+            <section id="home-view" class="app-view">
+                <div class="p-4 border-b custom-border flex gap-4">
+                    <div id="composer-avatar" class="w-12 h-12 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center"></div>
+                    <div class="flex-1">
+                        <textarea id="post-input" placeholder="ماذا يحدث؟" class="tweet-input bg-transparent w-full text-xl resize-none min-h-[70px] mt-2 hide-scrollbar"></textarea>
+                        <input id="post-image-input" type="url" placeholder="رابط صورة (اختياري)" class="tweet-input bg-transparent w-full border custom-border rounded-xl px-3 py-2 mt-2 text-sm focus:border-[#1d9bf0]">
+                        <div class="flex items-center justify-between mt-4 border-t custom-border pt-4">
+                            <div class="flex gap-2 text-[#1d9bf0]">
+                                <i data-lucide="image" class="w-5 h-5"></i>
+                                <i data-lucide="list-video" class="w-5 h-5"></i>
+                                <i data-lucide="smile" class="w-5 h-5"></i>
+                                <i data-lucide="map-pin" class="w-5 h-5"></i>
+                            </div>
+                            <button id="publish-btn" class="bg-[#1d9bf0] opacity-50 px-5 py-2 rounded-full font-bold disabled:cursor-not-allowed" disabled>نشر</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tweets-container"></div>
+            </section>
+
+            <section id="explore-view" class="app-view hidden-view">
+                <div class="p-4 border-b custom-border">
+                    <input id="explore-search" type="text" placeholder="ابحث في المنشورات أو الوسوم..." class="search-input bg-[#202327] w-full rounded-full py-3 px-5 border border-transparent focus:bg-black focus:border-[#1d9bf0]">
+                </div>
+                <div id="explore-results" class="divide-y custom-border"></div>
+            </section>
+
+            <section id="notifications-view" class="app-view hidden-view">
+                <div id="notifications-list" class="divide-y custom-border"></div>
+            </section>
+
+            <section id="messages-view" class="app-view hidden-view h-[calc(100vh-130px)] flex">
+                <div class="w-2/5 border-l custom-border overflow-y-auto hide-scrollbar" id="conversation-list"></div>
+                <div class="w-3/5 flex flex-col">
+                    <div id="chat-header" class="p-4 border-b custom-border font-bold">اختر محادثة</div>
+                    <div id="chat-messages" class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-3"></div>
+                    <div class="p-4 border-t custom-border flex gap-2">
+                        <input id="chat-input" type="text" placeholder="اكتب رسالة..." class="search-input flex-1 bg-[#202327] rounded-full py-2 px-4 border border-transparent focus:bg-black focus:border-[#1d9bf0]">
+                        <button id="chat-send-btn" class="bg-[#1d9bf0] px-4 rounded-full font-bold">إرسال</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="profile-view" class="app-view hidden-view">
+                <div class="relative h-44 bg-gradient-to-l from-[#0d2233] via-[#113149] to-[#1d9bf0]/80"></div>
+                <div class="px-4 pb-6 border-b custom-border">
+                    <div class="-mt-14 w-28 h-28 rounded-full border-4 border-black bg-[#1d9bf0] flex items-center justify-center text-3xl font-black" id="profile-avatar">م</div>
+                    <div class="mt-4 flex items-center justify-between gap-2">
+                        <div>
+                            <h2 id="profile-name" class="text-2xl font-black">مستخدم تجريبي</h2>
+                            <p id="profile-username" class="text-gray-500">@demo_user</p>
+                        </div>
+                        <button id="edit-profile-btn" class="border custom-border px-4 py-2 rounded-full font-bold hover-bg">تعديل الملف</button>
+                    </div>
+                    <p id="profile-bio" class="mt-4 text-sm text-gray-300 leading-7">مطور ومهتم بتجارب المستخدم ومنصات التواصل.</p>
+                    <div class="mt-4 flex gap-6 text-sm">
+                        <span><strong id="following-count">38</strong> متابعة</span>
+                        <span><strong id="followers-count">124</strong> متابع</span>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-bold mb-3">منشوراتي</h3>
+                    <div id="profile-posts" class="divide-y custom-border"></div>
+                </div>
+            </section>
+
+            <section id="bookmarks-view" class="app-view hidden-view">
+                <div class="p-4 border-b custom-border">
+                    <h2 class="text-xl font-bold">المحفوظات</h2>
+                    <p class="text-sm text-gray-500">المنشورات التي قمت بحفظها للعودة إليها لاحقاً.</p>
+                </div>
+                <div id="bookmarks-list" class="divide-y custom-border"></div>
+            </section>
+        </main>
+
+        <aside class="hidden lg:block w-[350px] xl:w-[400px] px-6 py-2 space-y-4">
+            <div class="sticky top-0 bg-black py-2 z-10">
+                <div class="relative group">
+                    <div class="absolute inset-y-0 right-4 flex items-center text-gray-500 group-focus-within:text-[#1d9bf0]">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </div>
+                    <input id="global-search" type="text" placeholder="بحث" class="search-input bg-[#202327] w-full rounded-full py-3 pr-12 pl-4 focus:bg-black focus:border-[#1d9bf0] border border-transparent">
+                </div>
+            </div>
+
+            <div class="bg-[#16181c] rounded-2xl overflow-hidden">
+                <h2 class="text-xl font-bold px-4 py-3">الوسوم الرائجة</h2>
+                <div id="trends-list"></div>
+                <button id="show-more-trends" class="w-full text-right px-4 py-4 text-[#1d9bf0] hover-bg text-sm">عرض المزيد</button>
+            </div>
+
+            <div class="bg-[#16181c] rounded-2xl overflow-hidden">
+                <h2 class="text-xl font-bold px-4 py-3">من تتابع</h2>
+                <div id="suggestions-list"></div>
+                <button id="show-more-suggestions" class="w-full text-right px-4 py-4 text-[#1d9bf0] hover-bg text-sm">تحديث الاقتراحات</button>
+            </div>
+
+            <div class="bg-[#16181c] rounded-2xl p-4 space-y-3">
+                <h2 class="text-lg font-bold">إحصاءات سريعة</h2>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="bg-black/50 rounded-xl p-3">
+                        <div class="text-gray-500">إجمالي المنشورات</div>
+                        <div id="stat-posts" class="font-bold text-lg">0</div>
+                    </div>
+                    <div class="bg-black/50 rounded-xl p-3">
+                        <div class="text-gray-500">الإعجابات</div>
+                        <div id="stat-likes" class="font-bold text-lg">0</div>
+                    </div>
+                    <div class="bg-black/50 rounded-xl p-3">
+                        <div class="text-gray-500">المحفوظات</div>
+                        <div id="stat-bookmarks" class="font-bold text-lg">0</div>
+                    </div>
+                    <div class="bg-black/50 rounded-xl p-3">
+                        <div class="text-gray-500">المتابَعون</div>
+                        <div id="stat-following" class="font-bold text-lg">0</div>
+                    </div>
+                    <div class="bg-black/50 rounded-xl p-3 col-span-2">
+                        <div class="text-gray-500">حالة قاعدة البيانات</div>
+                        <div id="db-status-text" class="font-bold text-amber-400">جاري التحقق...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-4 text-xs text-gray-500 space-x-2 space-x-reverse flex flex-wrap leading-6">
+                <a href="#" class="hover:underline">شروط الخدمة</a>
+                <a href="#" class="hover:underline">سياسة الخصوصية</a>
+                <a href="#" class="hover:underline">سياسة الكوكيز</a>
+                <a href="#" class="hover:underline">إمكانية الوصول</a>
+                <a href="#" class="hover:underline">معلومات الإعلان</a>
+                <span>© 2026 Majra</span>
+            </div>
+        </aside>
+    </div>
+
+    <div class="fixed bottom-0 inset-x-0 bg-black border-t custom-border lg:hidden flex justify-around py-3 z-30" id="mobile-nav">
+        <button class="mobile-nav-btn text-white" data-view="home-view"><i data-lucide="home" class="w-6 h-6"></i></button>
+        <button class="mobile-nav-btn text-gray-500" data-view="explore-view"><i data-lucide="search" class="w-6 h-6"></i></button>
+        <button class="mobile-nav-btn text-gray-500" data-view="notifications-view"><i data-lucide="bell" class="w-6 h-6"></i></button>
+        <button class="mobile-nav-btn text-gray-500" data-view="messages-view"><i data-lucide="mail" class="w-6 h-6"></i></button>
+        <button class="mobile-nav-btn text-gray-500" data-view="profile-view"><i data-lucide="user" class="w-6 h-6"></i></button>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'majra_state_v1';
+        const REMOTE_DB_BASE = 'https://vz3jut5t.ap-southeast.insforge.app';
+        const REMOTE_STATE_ENDPOINT = `${REMOTE_DB_BASE}/social/state`;
+
+        const defaultState = {
+            currentUser: {
+                name: 'مستخدم تجريبي',
+                username: 'demo_user',
+                bio: 'مطور ومهتم بتجارب المستخدم ومنصات التواصل.',
+            },
+            posts: [
+                {
+                    id: 'p1',
+                    author: { name: 'فريق الدعم', username: 'MajraSupport', verified: true, avatar: 'د' },
+                    content: 'مرحباً بك في Majra. هذه نسخة عربية متكاملة مع نشر فوري، رسائل، تنبيهات، محفوظات، وملف شخصي قابل للتعديل.',
+                    image: '',
+                    time: '2س',
+                    likes: 128,
+                    reposts: 37,
+                    comments: 14,
+                    views: 5200,
+                    liked: false,
+                    reposted: false,
+                    bookmarked: false,
+                    fromFollowing: true,
+                    owned: false,
+                },
+                {
+                    id: 'p2',
+                    author: { name: 'تقنية اليوم', username: 'tech_today', verified: false, avatar: 'ت' },
+                    content: 'ما هو أهم شيء تتمنى وجوده في منصة تواصل عربية؟ اكتب اقتراحك في الردود.',
+                    image: '',
+                    time: '5س',
+                    likes: 340,
+                    reposts: 88,
+                    comments: 63,
+                    views: 24000,
+                    liked: false,
+                    reposted: false,
+                    bookmarked: false,
+                    fromFollowing: false,
+                    owned: false,
+                },
+                {
+                    id: 'p3',
+                    author: { name: 'مجتمع المطورين', username: 'arabdevs', verified: true, avatar: 'م' },
+                    content: 'جلسة مباشرة الليلة عن بناء تطبيقات تواصل اجتماعي باستخدام JavaScript وTailwind. #برمجة #ويب',
+                    image: 'https://images.unsplash.com/photo-1518773553398-650c184e0bb3?auto=format&fit=crop&w=1200&q=80',
+                    time: '8س',
+                    likes: 910,
+                    reposts: 211,
+                    comments: 120,
+                    views: 98000,
+                    liked: false,
+                    reposted: false,
+                    bookmarked: false,
+                    fromFollowing: true,
+                    owned: false,
+                }
+            ],
+            trends: [
+                { tag: '#دوري_الأبطال', topic: 'الرياضة', posts: '120 ألف منشور' },
+                { tag: '#الذكاء_الاصطناعي', topic: 'التقنية في اليمن', posts: '45.2 ألف منشور' },
+                { tag: '#صنعاء_الآن', topic: 'أخبار', posts: '12.5 ألف منشور' },
+                { tag: '#برمجة', topic: 'تعليم', posts: '8.2 ألف منشور' },
+                { tag: '#وظائف_عن_بعد', topic: 'أعمال', posts: '5.1 ألف منشور' },
+                { tag: '#تصميم_واجهات', topic: 'تقنية', posts: '3.9 ألف منشور' }
+            ],
+            suggestions: [
+                { id: 's1', name: 'أخبار الرياضة', username: 'sport_news', avatar: 'ر', following: false },
+                { id: 's2', name: 'أكاديمية البرمجة', username: 'code_academy', avatar: 'ب', following: false },
+                { id: 's3', name: 'أخبار الاقتصاد', username: 'eco_now', avatar: 'ا', following: false },
+                { id: 's4', name: 'مطور واجهات', username: 'ui_maker', avatar: 'و', following: false }
+            ],
+            notifications: [
+                { id: 'n1', text: 'مرحباً بك! أكمل ملفك الشخصي لزيادة التفاعل.', time: 'الآن', read: false }
+            ],
+            messages: [
+                {
+                    id: 'm1',
+                    with: 'تقنية اليوم',
+                    username: 'tech_today',
+                    avatar: 'ت',
+                    messages: [
+                        { sender: 'them', text: 'أهلاً! شكراً للمتابعة.', time: '11:30' },
+                        { sender: 'me', text: 'سعيد بمحتواكم، استمروا.', time: '11:32' }
+                    ]
+                },
+                {
+                    id: 'm2',
+                    with: 'مجتمع المطورين',
+                    username: 'arabdevs',
+                    avatar: 'م',
+                    messages: [
+                        { sender: 'them', text: 'هل ستحضر البث الليلة؟', time: '09:12' }
+                    ]
+                }
+            ],
+            activeConversationId: 'm1',
+            feedFilter: 'all',
+            activeView: 'home-view'
+        };
+
+        let state = loadState();
+        let syncTimer = null;
+
+        const appViews = [...document.querySelectorAll('.app-view')];
+        const navButtons = [...document.querySelectorAll('.nav-btn')];
+        const mobileNavButtons = [...document.querySelectorAll('.mobile-nav-btn')];
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return structuredClone(defaultState);
+                return { ...structuredClone(defaultState), ...JSON.parse(raw) };
+            } catch {
+                return structuredClone(defaultState);
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            scheduleRemoteSync();
+        }
+
+        function setDbStatus(text, kind = 'warn') {
+            const el = document.getElementById('db-status-text');
+            if (!el) return;
+            el.textContent = text;
+            el.classList.remove('text-amber-400', 'text-green-400', 'text-red-400');
+            if (kind === 'ok') {
+                el.classList.add('text-green-400');
+            } else if (kind === 'error') {
+                el.classList.add('text-red-400');
+            } else {
+                el.classList.add('text-amber-400');
+            }
+        }
+
+        async function pullRemoteState() {
+            setDbStatus('جاري الاتصال بالخادم...', 'warn');
+            try {
+                const res = await fetch(REMOTE_STATE_ENDPOINT, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!res.ok) {
+                    setDbStatus('الربط غير مكتمل (يعمل محلياً)', 'warn');
+                    return;
+                }
+
+                const remote = await res.json();
+                if (!remote || typeof remote !== 'object') {
+                    setDbStatus('بيانات الخادم غير صالحة', 'error');
+                    return;
+                }
+
+                state = { ...structuredClone(defaultState), ...state, ...remote };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                refreshAll();
+                setDbStatus('متصل بقاعدة البيانات', 'ok');
+            } catch {
+                setDbStatus('الربط غير متاح حالياً (محلي)', 'warn');
+            }
+        }
+
+        async function pushRemoteState() {
+            try {
+                const res = await fetch(REMOTE_STATE_ENDPOINT, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(state)
+                });
+
+                if (res.ok) {
+                    setDbStatus('تمت المزامنة مع قاعدة البيانات', 'ok');
+                } else {
+                    setDbStatus('تعذر حفظ التغييرات على الخادم', 'warn');
+                }
+            } catch {
+                setDbStatus('فشل المزامنة (محفوظ محلياً)', 'warn');
+            }
+        }
+
+        function scheduleRemoteSync() {
+            if (syncTimer) clearTimeout(syncTimer);
+            syncTimer = setTimeout(() => {
+                pushRemoteState();
+            }, 450);
+        }
+
+        function avatarColor(char) {
+            const colors = ['#1d9bf0', '#00ba7c', '#f91880', '#7856ff', '#f59e0b', '#ef4444'];
+            const code = (char || 'A').charCodeAt(0);
+            return colors[code % colors.length];
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+            if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+            return String(num);
+        }
+
+        function nowTime() {
+            const d = new Date();
+            return d.toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function notify(text) {
+            state.notifications.unshift({
+                id: `n_${Date.now()}`,
+                text,
+                time: 'الآن',
+                read: false
+            });
+            updateNotificationBadge();
+            renderNotifications();
+            saveState();
+        }
+
+        function updateNotificationBadge() {
+            const unread = state.notifications.filter((n) => !n.read).length;
+            const badge = document.getElementById('notif-badge');
+            if (unread > 0) {
+                badge.classList.remove('hidden');
+                badge.textContent = unread > 99 ? '99+' : String(unread);
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function setActiveView(viewId) {
+            state.activeView = viewId;
+            appViews.forEach((view) => view.classList.toggle('hidden-view', view.id !== viewId));
+
+            navButtons.forEach((btn) => {
+                const active = btn.dataset.view === viewId;
+                btn.classList.toggle('font-bold', active);
+            });
+
+            mobileNavButtons.forEach((btn) => {
+                const active = btn.dataset.view === viewId;
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('text-gray-500', !active);
+            });
+
+            const titles = {
+                'home-view': 'الرئيسية',
+                'explore-view': 'استكشف',
+                'notifications-view': 'التنبيهات',
+                'messages-view': 'الرسائل',
+                'profile-view': 'الملف الشخصي',
+                'bookmarks-view': 'المحفوظات'
+            };
+
+            const showTabs = viewId === 'home-view';
+            document.getElementById('home-tabs').classList.toggle('hidden', !showTabs);
+            document.getElementById('refresh-feed').classList.toggle('hidden', viewId !== 'home-view');
+
+            document.getElementById('view-title').textContent = titles[viewId] || 'Majra';
+
+            if (viewId === 'notifications-view') {
+                state.notifications = state.notifications.map((n) => ({ ...n, read: true }));
+                updateNotificationBadge();
+                renderNotifications();
+            }
+
+            if (viewId === 'profile-view') {
+                renderProfilePosts();
+            }
+
+            if (viewId === 'bookmarks-view') {
+                renderBookmarks();
+            }
+
+            saveState();
+        }
+
+        function postCard(post, forProfile = false) {
+            const verifiedIcon = post.author.verified
+                ? '<i data-lucide="badge-check" class="w-4 h-4 fill-[#1d9bf0] text-black"></i>'
+                : '';
+            const imageBlock = post.image
+                ? `<div class="mt-3 rounded-2xl overflow-hidden border custom-border"><img src="${post.image}" alt="post-image" class="w-full max-h-80 object-cover"/></div>`
+                : '';
+            const ownBadge = post.owned ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-[#1d9bf0]/20 text-[#1d9bf0]">منشورك</span>' : '';
+
+            return `
+                <article class="p-4 border-b custom-border hover-bg transition flex gap-3 fade-in" data-post-id="${post.id}">
+                    <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold" style="background:${avatarColor(post.author.avatar)}">${post.author.avatar}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1 mb-1 flex-wrap">
+                            <span class="font-bold">${post.author.name}</span>
+                            ${verifiedIcon}
+                            <span class="text-gray-500 text-sm">@${post.author.username} · ${post.time}</span>
+                            ${ownBadge}
+                        </div>
+                        <p class="text-[15px] leading-relaxed whitespace-pre-line">${post.content}</p>
+                        ${imageBlock}
+                        <div class="flex justify-between mt-3 text-gray-500 max-w-md">
+                            <button class="post-action flex items-center gap-2 hover:text-[#1d9bf0]" data-action="comment">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                <span class="text-xs">${formatNumber(post.comments)}</span>
+                            </button>
+                            <button class="post-action flex items-center gap-2 ${post.reposted ? 'text-green-500' : 'hover:text-green-500'}" data-action="repost">
+                                <i data-lucide="repeat-2" class="w-4 h-4"></i>
+                                <span class="text-xs">${formatNumber(post.reposts)}</span>
+                            </button>
+                            <button class="post-action flex items-center gap-2 ${post.liked ? 'text-pink-500' : 'hover:text-red-500'}" data-action="like">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                                <span class="text-xs">${formatNumber(post.likes)}</span>
+                            </button>
+                            <button class="post-action flex items-center gap-2 hover:text-[#1d9bf0]" data-action="view">
+                                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                                <span class="text-xs">${formatNumber(post.views)}</span>
+                            </button>
+                            <button class="post-action flex items-center gap-2 ${post.bookmarked ? 'text-[#1d9bf0]' : ''}" data-action="bookmark">
+                                <i data-lucide="bookmark" class="w-4 h-4"></i>
+                            </button>
+                            <button class="post-action flex items-center gap-2 hover:text-[#1d9bf0]" data-action="share">
+                                <i data-lucide="share" class="w-4 h-4"></i>
+                            </button>
+                            ${forProfile ? '<button class="post-action flex items-center gap-2 hover:text-red-500" data-action="delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : ''}
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('tweets-container');
+            const feed = state.feedFilter === 'following'
+                ? state.posts.filter((p) => p.fromFollowing || p.owned)
+                : state.posts;
+
+            if (feed.length === 0) {
+                container.innerHTML = '<div class="p-8 text-center text-gray-500">لا توجد منشورات لعرضها حالياً.</div>';
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = feed.map((post) => postCard(post)).join('');
+            lucide.createIcons();
+        }
+
+        function renderExplore() {
+            const q = document.getElementById('explore-search').value.trim().toLowerCase();
+            const container = document.getElementById('explore-results');
+            const matches = state.posts.filter((p) => {
+                const text = `${p.content} ${p.author.name} @${p.author.username}`.toLowerCase();
+                return text.includes(q);
+            });
+
+            if (!matches.length) {
+                container.innerHTML = '<div class="p-8 text-center text-gray-500">لا توجد نتائج مطابقة.</div>';
+                return;
+            }
+
+            container.innerHTML = matches.map((post) => postCard(post)).join('');
+            lucide.createIcons();
+        }
+
+        function renderTrends(limit = 3) {
+            const list = document.getElementById('trends-list');
+            list.innerHTML = state.trends.slice(0, limit).map((trend) => `
+                <button class="trend-item w-full text-right hover-bg px-4 py-3" data-tag="${trend.tag}">
+                    <div class="text-xs text-gray-500">${trend.topic} · متداول</div>
+                    <div class="font-bold">${trend.tag}</div>
+                    <div class="text-xs text-gray-500 mt-1">${trend.posts}</div>
+                </button>
+            `).join('');
+        }
+
+        function renderSuggestions() {
+            const list = document.getElementById('suggestions-list');
+            list.innerHTML = state.suggestions.slice(0, 3).map((s) => `
+                <div class="flex items-center justify-between px-4 py-3 hover-bg">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold" style="background:${avatarColor(s.avatar)}">${s.avatar}</div>
+                        <div>
+                            <div class="font-bold text-sm">${s.name}</div>
+                            <div class="text-gray-500 text-xs">@${s.username}</div>
+                        </div>
+                    </div>
+                    <button class="follow-btn ${s.following ? 'bg-transparent border custom-border text-white' : 'bg-white text-black'} font-bold text-sm px-4 py-1.5 rounded-full" data-suggestion-id="${s.id}">
+                        ${s.following ? 'متابَع' : 'تابِع'}
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderNotifications() {
+            const list = document.getElementById('notifications-list');
+            if (state.notifications.length === 0) {
+                list.innerHTML = '<div class="p-8 text-center text-gray-500">لا توجد تنبيهات جديدة.</div>';
+                return;
+            }
+
+            list.innerHTML = state.notifications.map((n) => `
+                <div class="p-4 flex items-start gap-3 ${n.read ? 'opacity-80' : 'bg-[#0a1824]'}">
+                    <div class="w-9 h-9 rounded-full bg-[#1d9bf0]/20 text-[#1d9bf0] flex items-center justify-center">
+                        <i data-lucide="bell" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm leading-6">${n.text}</p>
+                        <span class="text-xs text-gray-500">${n.time}</span>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderConversations() {
+            const list = document.getElementById('conversation-list');
+            list.innerHTML = state.messages.map((conv) => {
+                const latest = conv.messages[conv.messages.length - 1];
+                const active = conv.id === state.activeConversationId;
+                return `
+                    <button class="conversation-btn w-full text-right p-4 border-b custom-border ${active ? 'bg-white/10' : 'hover-bg'}" data-conv-id="${conv.id}">
+                        <div class="flex gap-3 items-center">
+                            <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold" style="background:${avatarColor(conv.avatar)}">${conv.avatar}</div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-sm">${conv.with}</div>
+                                <div class="text-xs text-gray-500 truncate">${latest ? latest.text : 'ابدأ المحادثة'}</div>
+                            </div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function renderChat() {
+            const convo = state.messages.find((m) => m.id === state.activeConversationId);
+            const chatHeader = document.getElementById('chat-header');
+            const chatMessages = document.getElementById('chat-messages');
+
+            if (!convo) {
+                chatHeader.textContent = 'اختر محادثة';
+                chatMessages.innerHTML = '<div class="text-gray-500 text-center mt-10">لا توجد محادثة محددة.</div>';
+                return;
+            }
+
+            chatHeader.textContent = convo.with;
+            chatMessages.innerHTML = convo.messages.map((msg) => `
+                <div class="flex ${msg.sender === 'me' ? 'justify-start' : 'justify-end'}">
+                    <div class="max-w-[80%] px-4 py-2 rounded-2xl ${msg.sender === 'me' ? 'bg-[#1d9bf0]' : 'bg-[#202327]'}">
+                        <p class="text-sm leading-6">${msg.text}</p>
+                        <div class="text-[10px] opacity-80 mt-1">${msg.time}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function renderProfile() {
+            const u = state.currentUser;
+            const avatar = (u.name || 'م').trim().charAt(0);
+
+            document.getElementById('account-avatar').textContent = avatar;
+            document.getElementById('account-avatar').style.background = avatarColor(avatar);
+            document.getElementById('account-name').textContent = u.name;
+            document.getElementById('account-username').textContent = `@${u.username}`;
+
+            document.getElementById('composer-avatar').textContent = avatar;
+            document.getElementById('composer-avatar').style.background = avatarColor(avatar);
+
+            document.getElementById('profile-avatar').textContent = avatar;
+            document.getElementById('profile-name').textContent = u.name;
+            document.getElementById('profile-username').textContent = `@${u.username}`;
+            document.getElementById('profile-bio').textContent = u.bio;
+        }
+
+        function renderProfilePosts() {
+            const list = document.getElementById('profile-posts');
+            const myPosts = state.posts.filter((p) => p.owned);
+            if (myPosts.length === 0) {
+                list.innerHTML = '<div class="p-6 text-sm text-gray-500">لم تنشر أي محتوى بعد.</div>';
+                return;
+            }
+            list.innerHTML = myPosts.map((p) => postCard(p, true)).join('');
+            lucide.createIcons();
+        }
+
+        function renderBookmarks() {
+            const list = document.getElementById('bookmarks-list');
+            const saved = state.posts.filter((p) => p.bookmarked);
+            if (!saved.length) {
+                list.innerHTML = '<div class="p-8 text-center text-gray-500">لا توجد منشورات محفوظة.</div>';
+                return;
+            }
+            list.innerHTML = saved.map((p) => postCard(p)).join('');
+            lucide.createIcons();
+        }
+
+        function renderStats() {
+            const likes = state.posts.reduce((sum, p) => sum + (p.liked ? 1 : 0), 0);
+            const bookmarks = state.posts.reduce((sum, p) => sum + (p.bookmarked ? 1 : 0), 0);
+            const following = state.suggestions.reduce((sum, s) => sum + (s.following ? 1 : 0), 0);
+
+            document.getElementById('stat-posts').textContent = String(state.posts.length);
+            document.getElementById('stat-likes').textContent = String(likes);
+            document.getElementById('stat-bookmarks').textContent = String(bookmarks);
+            document.getElementById('stat-following').textContent = String(following);
+            document.getElementById('followers-count').textContent = String(124 + likes + following);
+            document.getElementById('following-count').textContent = String(38 + following);
+        }
+
+        function refreshAll() {
+            renderProfile();
+            renderFeed();
+            renderExplore();
+            renderTrends();
+            renderSuggestions();
+            renderNotifications();
+            renderConversations();
+            renderChat();
+            renderProfilePosts();
+            renderBookmarks();
+            renderStats();
+            updateNotificationBadge();
+            setActiveView(state.activeView || 'home-view');
+            lucide.createIcons();
+        }
+
+        function handlePostAction(postId, action) {
+            const post = state.posts.find((p) => p.id === postId);
+            if (!post) return;
+
+            if (action === 'like') {
+                post.liked = !post.liked;
+                post.likes += post.liked ? 1 : -1;
+                notify(post.liked ? 'تم تسجيل إعجابك بمنشور.' : 'تم إزالة الإعجاب.');
+            } else if (action === 'repost') {
+                post.reposted = !post.reposted;
+                post.reposts += post.reposted ? 1 : -1;
+            } else if (action === 'bookmark') {
+                post.bookmarked = !post.bookmarked;
+                notify(post.bookmarked ? 'تم حفظ المنشور في المحفوظات.' : 'تمت إزالة المنشور من المحفوظات.');
+            } else if (action === 'comment') {
+                const reply = prompt('اكتب ردك:');
+                if (reply && reply.trim()) {
+                    post.comments += 1;
+                    notify('تم إضافة ردك بنجاح.');
+                }
+            } else if (action === 'share') {
+                navigator.clipboard.writeText(`${location.href}#${post.id}`).catch(() => {});
+                notify('تم نسخ رابط المنشور.');
+            } else if (action === 'delete' && post.owned) {
+                state.posts = state.posts.filter((p) => p.id !== post.id);
+                notify('تم حذف منشورك.');
+            }
+
+            saveState();
+            refreshAll();
+        }
+
+        document.addEventListener('click', (e) => {
+            const navBtn = e.target.closest('.nav-btn');
+            if (navBtn) {
+                setActiveView(navBtn.dataset.view);
+                return;
+            }
+
+            const mobileBtn = e.target.closest('.mobile-nav-btn');
+            if (mobileBtn) {
+                setActiveView(mobileBtn.dataset.view);
+                return;
+            }
+
+            const actionBtn = e.target.closest('.post-action');
+            if (actionBtn) {
+                const postEl = actionBtn.closest('[data-post-id]');
+                if (!postEl) return;
+                handlePostAction(postEl.dataset.postId, actionBtn.dataset.action);
+                return;
+            }
+
+            const trendBtn = e.target.closest('.trend-item');
+            if (trendBtn) {
+                const tag = trendBtn.dataset.tag;
+                document.getElementById('explore-search').value = tag;
+                setActiveView('explore-view');
+                renderExplore();
+                return;
+            }
+
+            const followBtn = e.target.closest('.follow-btn');
+            if (followBtn) {
+                const id = followBtn.dataset.suggestionId;
+                const user = state.suggestions.find((s) => s.id === id);
+                if (!user) return;
+                user.following = !user.following;
+                notify(user.following ? `بدأت متابعة ${user.name}.` : `أوقفت متابعة ${user.name}.`);
+                saveState();
+                refreshAll();
+            }
+        });
+
+        document.getElementById('show-more-trends').addEventListener('click', () => {
+            renderTrends(state.trends.length);
+        });
+
+        document.getElementById('show-more-suggestions').addEventListener('click', () => {
+            state.suggestions = [...state.suggestions.sort(() => Math.random() - 0.5)];
+            saveState();
+            renderSuggestions();
+        });
+
+        const postInput = document.getElementById('post-input');
+        const postImageInput = document.getElementById('post-image-input');
+        const publishBtn = document.getElementById('publish-btn');
+
+        function updatePublishButton() {
+            const canPublish = postInput.value.trim().length > 0;
+            publishBtn.disabled = !canPublish;
+            publishBtn.classList.toggle('opacity-50', !canPublish);
+        }
+
+        postInput.addEventListener('input', updatePublishButton);
+        postImageInput.addEventListener('input', updatePublishButton);
+
+        publishBtn.addEventListener('click', () => {
+            const content = postInput.value.trim();
+            const image = postImageInput.value.trim();
+            if (!content) return;
+
+            const avatar = (state.currentUser.name || 'م').trim().charAt(0);
+
+            state.posts.unshift({
+                id: `p_${Date.now()}`,
+                author: {
+                    name: state.currentUser.name,
+                    username: state.currentUser.username,
+                    verified: false,
+                    avatar
+                },
+                content,
+                image,
+                time: 'الآن',
+                likes: 0,
+                reposts: 0,
+                comments: 0,
+                views: 0,
+                liked: false,
+                reposted: false,
+                bookmarked: false,
+                fromFollowing: true,
+                owned: true
+            });
+
+            postInput.value = '';
+            postImageInput.value = '';
+            updatePublishButton();
+            notify('تم نشر منشورك بنجاح.');
+            setActiveView('home-view');
+            saveState();
+            refreshAll();
+        });
+
+        document.getElementById('quick-post-btn').addEventListener('click', () => {
+            setActiveView('home-view');
+            postInput.focus();
+        });
+
+        document.getElementById('refresh-feed').addEventListener('click', () => {
+            state.posts = state.posts.map((p) => ({ ...p, views: p.views + Math.floor(Math.random() * 200) }));
+            saveState();
+            renderFeed();
+            renderStats();
+        });
+
+        document.querySelectorAll('.feed-tab').forEach((tab) => {
+            tab.addEventListener('click', () => {
+                state.feedFilter = tab.dataset.filter;
+                document.querySelectorAll('.feed-tab').forEach((t) => {
+                    t.classList.remove('tab-active');
+                    t.classList.add('text-gray-500');
+                });
+                tab.classList.add('tab-active');
+                tab.classList.remove('text-gray-500');
+                saveState();
+                renderFeed();
+            });
+        });
+
+        document.getElementById('explore-search').addEventListener('input', renderExplore);
+        document.getElementById('global-search').addEventListener('input', (e) => {
+            const q = e.target.value.trim();
+            document.getElementById('explore-search').value = q;
+            setActiveView('explore-view');
+            renderExplore();
+        });
+
+        document.getElementById('conversation-list').addEventListener('click', (e) => {
+            const btn = e.target.closest('.conversation-btn');
+            if (!btn) return;
+            state.activeConversationId = btn.dataset.convId;
+            saveState();
+            renderConversations();
+            renderChat();
+        });
+
+        document.getElementById('chat-send-btn').addEventListener('click', () => {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            const convo = state.messages.find((m) => m.id === state.activeConversationId);
+            if (!convo) return;
+            convo.messages.push({ sender: 'me', text, time: nowTime() });
+            input.value = '';
+            saveState();
+            renderConversations();
+            renderChat();
+        });
+
+        document.getElementById('chat-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('chat-send-btn').click();
+            }
+        });
+
+        document.getElementById('edit-profile-btn').addEventListener('click', () => {
+            const name = prompt('الاسم الكامل', state.currentUser.name);
+            if (name === null) return;
+            const username = prompt('اسم المستخدم', state.currentUser.username);
+            if (username === null) return;
+            const bio = prompt('النبذة', state.currentUser.bio);
+            if (bio === null) return;
+
+            state.currentUser.name = name.trim() || state.currentUser.name;
+            state.currentUser.username = username.trim().replace('@', '') || state.currentUser.username;
+            state.currentUser.bio = bio.trim() || state.currentUser.bio;
+
+            state.posts = state.posts.map((post) => {
+                if (!post.owned) return post;
+                return {
+                    ...post,
+                    author: {
+                        ...post.author,
+                        name: state.currentUser.name,
+                        username: state.currentUser.username,
+                        avatar: state.currentUser.name.trim().charAt(0)
+                    }
+                };
+            });
+
+            notify('تم تحديث الملف الشخصي.');
+            saveState();
+            refreshAll();
+        });
+
+        function initAuthFlow() {
+            const modal = document.getElementById('auth-modal');
+            const shouldShow = !localStorage.getItem('majra_auth_done');
+
+            if (shouldShow) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            document.getElementById('auth-save-btn').addEventListener('click', () => {
+                const name = document.getElementById('auth-name').value.trim();
+                const username = document.getElementById('auth-username').value.trim().replace('@', '');
+                const bio = document.getElementById('auth-bio').value.trim();
+
+                if (!name || !username) {
+                    alert('الرجاء إدخال الاسم واسم المستخدم.');
+                    return;
+                }
+
+                state.currentUser = {
+                    name,
+                    username,
+                    bio: bio || defaultState.currentUser.bio,
+                };
+
+                localStorage.setItem('majra_auth_done', '1');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                notify('تم إنشاء الحساب التجريبي بنجاح.');
+                saveState();
+                refreshAll();
+            });
+        }
+
+        window.addEventListener('load', () => {
+            const splash = document.getElementById('splash-screen');
+            setTimeout(() => {
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                }, 500);
+            }, 900);
+        });
+
+        refreshAll();
+        initAuthFlow();
+        updatePublishButton();
+        pullRemoteState();
+
+        if (state.feedFilter === 'following') {
+            document.querySelectorAll('.feed-tab').forEach((t) => {
+                const active = t.dataset.filter === 'following';
+                t.classList.toggle('tab-active', active);
+                t.classList.toggle('text-gray-500', !active);
+            });
+        }
+    </script>
+</body>
+</html>
