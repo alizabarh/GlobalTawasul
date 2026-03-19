@@ -326,8 +326,15 @@
 
     <script>
         const STORAGE_KEY = 'majra_state_v1';
+        const API_KEY_STORAGE = 'majra_api_key';
         const REMOTE_DB_BASE = 'https://vz3jut5t.ap-southeast.insforge.app';
-        const REMOTE_STATE_ENDPOINT = `${REMOTE_DB_BASE}/social/state`;
+        const REMOTE_HEALTH_ENDPOINT = `${REMOTE_DB_BASE}/health`;
+        const REMOTE_STATE_CANDIDATES = [
+            `${REMOTE_DB_BASE}/social/state`,
+            `${REMOTE_DB_BASE}/state`,
+            `${REMOTE_DB_BASE}/api/state`,
+            `${REMOTE_DB_BASE}/api/social/state`
+        ];
 
         const defaultState = {
             currentUser: {
@@ -430,6 +437,8 @@
 
         let state = loadState();
         let syncTimer = null;
+        let discoveredStateEndpoint = null;
+        let remoteHealthy = false;
 
         const appViews = [...document.querySelectorAll('.app-view')];
         const navButtons = [...document.querySelectorAll('.nav-btn')];
@@ -450,6 +459,23 @@
             scheduleRemoteSync();
         }
 
+        function getApiKey() {
+            return (window.MAJRA_API_KEY || localStorage.getItem(API_KEY_STORAGE) || '').trim();
+        }
+
+        function buildRemoteHeaders(includeJson = false) {
+            const headers = { 'Accept': 'application/json' };
+            if (includeJson) headers['Content-Type'] = 'application/json';
+
+            const key = getApiKey();
+            if (key) {
+                headers['x-api-key'] = key;
+                headers['Authorization'] = `Bearer ${key}`;
+            }
+
+            return headers;
+        }
+
         function setDbStatus(text, kind = 'warn') {
             const el = document.getElementById('db-status-text');
             if (!el) return;
@@ -464,12 +490,60 @@
             }
         }
 
+        async function verifyRemoteHealth() {
+            try {
+                const res = await fetch(REMOTE_HEALTH_ENDPOINT, {
+                    method: 'GET',
+                    headers: buildRemoteHeaders(false)
+                });
+                if (!res.ok) return false;
+                const text = await res.text();
+                return text.trim().toUpperCase() === 'OK';
+            } catch {
+                return false;
+            }
+        }
+
+        async function discoverStateEndpoint() {
+            for (const endpoint of REMOTE_STATE_CANDIDATES) {
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'GET',
+                        headers: buildRemoteHeaders(false)
+                    });
+                    if (!res.ok) continue;
+                    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+                    if (!contentType.includes('application/json')) continue;
+                    discoveredStateEndpoint = endpoint;
+                    return endpoint;
+                } catch {
+                }
+            }
+            return null;
+        }
+
         async function pullRemoteState() {
             setDbStatus('جاري الاتصال بالخادم...', 'warn');
+
             try {
-                const res = await fetch(REMOTE_STATE_ENDPOINT, {
+                remoteHealthy = await verifyRemoteHealth();
+                if (!remoteHealthy) {
+                    setDbStatus('الخادم غير متاح حالياً (وضع محلي)', 'warn');
+                    return;
+                }
+
+                if (!discoveredStateEndpoint) {
+                    await discoverStateEndpoint();
+                }
+
+                if (!discoveredStateEndpoint) {
+                    setDbStatus('الخادم متاح لكن مسار البيانات غير معروف', 'warn');
+                    return;
+                }
+
+                const res = await fetch(discoveredStateEndpoint, {
                     method: 'GET',
-                    headers: { 'Accept': 'application/json' }
+                    headers: buildRemoteHeaders(false)
                 });
 
                 if (!res.ok) {
@@ -486,7 +560,7 @@
                 state = { ...structuredClone(defaultState), ...state, ...remote };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                 refreshAll();
-                setDbStatus('متصل بقاعدة البيانات', 'ok');
+                setDbStatus('متصل بقاعدة البيانات ومحمّل', 'ok');
             } catch {
                 setDbStatus('الربط غير متاح حالياً (محلي)', 'warn');
             }
@@ -494,16 +568,27 @@
 
         async function pushRemoteState() {
             try {
-                const res = await fetch(REMOTE_STATE_ENDPOINT, {
+                if (!remoteHealthy) return;
+                if (!discoveredStateEndpoint) return;
+
+                const putRes = await fetch(discoveredStateEndpoint, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: buildRemoteHeaders(true),
                     body: JSON.stringify(state)
                 });
 
-                if (res.ok) {
+                if (putRes.ok) {
+                    setDbStatus('تمت المزامنة مع قاعدة البيانات', 'ok');
+                    return;
+                }
+
+                const postRes = await fetch(discoveredStateEndpoint, {
+                    method: 'POST',
+                    headers: buildRemoteHeaders(true),
+                    body: JSON.stringify(state)
+                });
+
+                if (postRes.ok) {
                     setDbStatus('تمت المزامنة مع قاعدة البيانات', 'ok');
                 } else {
                     setDbStatus('تعذر حفظ التغييرات على الخادم', 'warn');
