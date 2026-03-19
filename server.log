@@ -1,6 +1,0 @@
-
-> globaltawasul@1.0.0 start
-> node server.js
-
-DATABASE_URL is not set. Running without remote DB.
-Majra server running on port 3000
