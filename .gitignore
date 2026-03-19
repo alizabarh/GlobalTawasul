@@ -1,0 +1,25 @@
+
+# InsForge & AI agent skills
+.insforge
+.agent
+.agents
+.augment
+.claude
+.cline
+.github/copilot*
+.kilocode
+.qoder
+.qwen
+.roo
+.trae
+.windsurf
+
+# Node
+node_modules
+npm-debug.log*
+
+# Local environment secrets
+.env
+
+# Local MCP config (contains API keys)
+opencode.json

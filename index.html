@@ -327,7 +327,7 @@
     <script>
         const STORAGE_KEY = 'majra_state_v1';
         const API_KEY_STORAGE = 'majra_api_key';
-        const REMOTE_DB_BASE = 'https://vz3jut5t.ap-southeast.insforge.app';
+        const REMOTE_DB_BASE = window.MAJRA_API_BASE_URL || window.location.origin;
         const REMOTE_HEALTH_ENDPOINT = `${REMOTE_DB_BASE}/health`;
         const REMOTE_STATE_CANDIDATES = [
             `${REMOTE_DB_BASE}/social/state`,
