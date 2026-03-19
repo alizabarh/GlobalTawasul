@@ -9,28 +9,33 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg-main: #000000;
-            --bg-card: #16181c;
-            --border: #2f3336;
-            --text-muted: #71767b;
-            --primary: #1d9bf0;
-            --success: #00ba7c;
-            --danger: #f91880;
+            --app-bg: #000000;
+            --app-card: #16181c;
+            --app-input: #202327;
+            --app-border: #2f3336;
+            --app-text: #ffffff;
+            --app-muted: #71767b;
+            --app-primary: #1d9bf0;
+            --app-success: #00ba7c;
+            --app-danger: #f91880;
+            --hover-bg: rgba(231, 233, 234, 0.1);
+            --glass-bg: rgba(0, 0, 0, 0.7);
         }
 
         body {
             font-family: 'Vazirmatn', sans-serif;
-            background-color: var(--bg-main);
-            color: #ffffff;
+            background-color: var(--app-bg);
+            color: var(--app-text);
             overflow-x: hidden;
+            transition: background-color 0.25s ease, color 0.25s ease;
         }
 
         .custom-border {
-            border-color: var(--border);
+            border-color: var(--app-border);
         }
 
         .hover-bg:hover {
-            background-color: rgba(231, 233, 234, 0.1);
+            background-color: var(--hover-bg);
         }
 
         .tweet-input:focus,
@@ -50,7 +55,7 @@
 
         .glass {
             backdrop-filter: blur(12px);
-            background: rgba(0, 0, 0, 0.7);
+            background: var(--glass-bg);
         }
 
         .pulse-ring {
@@ -78,14 +83,38 @@
         }
 
         .tab-active {
-            color: #ffffff;
+            color: var(--app-text);
             font-weight: 700;
-            border-bottom: 4px solid var(--primary);
+            border-bottom: 4px solid var(--app-primary);
         }
 
         .hidden-view {
-            display: none;
+            display: none !important;
         }
+
+        .theme-option {
+            border: 1px solid var(--app-border);
+            background: var(--app-card);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .theme-option:hover {
+            transform: translateY(-2px);
+            border-color: var(--app-primary);
+        }
+
+        .theme-option.active {
+            border-color: var(--app-primary);
+            box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.35);
+        }
+
+        .bg-black { background-color: var(--app-bg) !important; }
+        .bg-\[\#16181c\] { background-color: var(--app-card) !important; }
+        .bg-\[\#202327\] { background-color: var(--app-input) !important; }
+        .text-gray-500 { color: var(--app-muted) !important; }
+        .text-\[\#1d9bf0\] { color: var(--app-primary) !important; }
+        .bg-\[\#1d9bf0\] { background-color: var(--app-primary) !important; }
+        .focus\:border-\[\#1d9bf0\]:focus { border-color: var(--app-primary) !important; }
     </style>
 </head>
 <body class="bg-black text-white">
@@ -150,6 +179,14 @@
                     <i data-lucide="bookmark"></i>
                     <span class="hidden xl:inline">المحفوظات</span>
                 </button>
+                <button data-view="friends-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8">
+                    <i data-lucide="users"></i>
+                    <span class="hidden xl:inline">الأصدقاء</span>
+                </button>
+                <button data-view="settings-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8">
+                    <i data-lucide="settings"></i>
+                    <span class="hidden xl:inline">الإعدادات</span>
+                </button>
             </nav>
 
             <button id="quick-post-btn" class="bg-[#1d9bf0] text-white font-bold text-lg p-3 xl:p-4 rounded-full mt-4 mb-8 xl:w-[90%] flex justify-center items-center hover:brightness-110 transition">
@@ -187,6 +224,16 @@
                     <div class="flex-1">
                         <textarea id="post-input" placeholder="ماذا يحدث؟" class="tweet-input bg-transparent w-full text-xl resize-none min-h-[70px] mt-2 hide-scrollbar"></textarea>
                         <input id="post-image-input" type="url" placeholder="رابط صورة (اختياري)" class="tweet-input bg-transparent w-full border custom-border rounded-xl px-3 py-2 mt-2 text-sm focus:border-[#1d9bf0]">
+                        <div class="mt-2">
+                            <input id="post-file-input" type="file" accept="image/*" class="hidden">
+                            <button id="select-local-image-btn" type="button" class="px-3 py-2 rounded-full border custom-border text-sm hover-bg">إضافة صورة من الجهاز</button>
+                        </div>
+                        <div id="local-image-preview" class="mt-3 rounded-2xl overflow-hidden border custom-border hidden">
+                            <img id="local-image-preview-img" src="" alt="local-image" class="w-full max-h-80 object-cover" />
+                            <div class="p-2 bg-black/50 flex justify-end">
+                                <button id="clear-local-image" type="button" class="text-xs px-3 py-1 rounded-full border custom-border hover-bg">إزالة الصورة</button>
+                            </div>
+                        </div>
                         <div class="flex items-center justify-between mt-4 border-t custom-border pt-4">
                             <div class="flex gap-2 text-[#1d9bf0]">
                                 <i data-lucide="image" class="w-5 h-5"></i>
@@ -226,7 +273,7 @@
             </section>
 
             <section id="profile-view" class="app-view hidden-view">
-                <div class="relative h-44 bg-gradient-to-l from-[#0d2233] via-[#113149] to-[#1d9bf0]/80"></div>
+                <div id="profile-cover" class="relative h-44"></div>
                 <div class="px-4 pb-6 border-b custom-border">
                     <div class="-mt-14 w-28 h-28 rounded-full border-4 border-black bg-[#1d9bf0] flex items-center justify-center text-3xl font-black" id="profile-avatar">م</div>
                     <div class="mt-4 flex items-center justify-between gap-2">
@@ -235,6 +282,14 @@
                             <p id="profile-username" class="text-gray-500">@demo_user</p>
                         </div>
                         <button id="edit-profile-btn" class="border custom-border px-4 py-2 rounded-full font-bold hover-bg">تعديل الملف</button>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <input id="profile-avatar-input" type="file" accept="image/*" class="hidden">
+                        <input id="profile-cover-input" type="file" accept="image/*" class="hidden">
+                        <button id="change-avatar-btn" class="border custom-border px-3 py-1.5 rounded-full text-sm hover-bg">تغيير صورة البروفايل</button>
+                        <button id="change-cover-btn" class="border custom-border px-3 py-1.5 rounded-full text-sm hover-bg">تغيير صورة الخلفية</button>
+                        <button id="remove-avatar-btn" class="border custom-border px-3 py-1.5 rounded-full text-sm hover-bg">حذف صورة البروفايل</button>
+                        <button id="remove-cover-btn" class="border custom-border px-3 py-1.5 rounded-full text-sm hover-bg">حذف صورة الخلفية</button>
                     </div>
                     <p id="profile-bio" class="mt-4 text-sm text-gray-300 leading-7">مطور ومهتم بتجارب المستخدم ومنصات التواصل.</p>
                     <div class="mt-4 flex gap-6 text-sm">
@@ -254,6 +309,49 @@
                     <p class="text-sm text-gray-500">المنشورات التي قمت بحفظها للعودة إليها لاحقاً.</p>
                 </div>
                 <div id="bookmarks-list" class="divide-y custom-border"></div>
+            </section>
+
+            <section id="friends-view" class="app-view hidden-view">
+                <div class="p-4 border-b custom-border">
+                    <h2 class="text-xl font-bold">الأصدقاء</h2>
+                    <p class="text-sm text-gray-500">تابع الأشخاص الذين تهتم بمحتواهم.</p>
+                </div>
+                <div class="p-4 border-b custom-border">
+                    <input id="friends-search" type="text" placeholder="ابحث عن صديق أو حساب..." class="search-input bg-[#202327] w-full rounded-full py-3 px-5 border border-transparent focus:bg-black focus:border-[#1d9bf0]">
+                    <div id="friends-summary" class="text-sm text-gray-500 mt-3"></div>
+                </div>
+                <div id="friends-list" class="divide-y custom-border"></div>
+            </section>
+
+            <section id="settings-view" class="app-view hidden-view">
+                <div class="p-4 border-b custom-border">
+                    <h2 class="text-xl font-bold">الإعدادات</h2>
+                    <p class="text-sm text-gray-500">خصص المظهر وحجم الخط حسب تفضيلك.</p>
+                </div>
+
+                <div class="p-4 space-y-6">
+                    <div class="bg-[#16181c] rounded-2xl p-4 border custom-border">
+                        <h3 class="font-bold text-lg mb-2">حجم الخط</h3>
+                        <p class="text-sm text-gray-500 mb-4">قم بضبط حجم النص لجميع أجزاء المنصة.</p>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm">A</span>
+                            <input id="font-size-range" type="range" min="85" max="125" step="1" class="w-full accent-[#1d9bf0]">
+                            <span class="text-lg font-bold">A</span>
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500">الحجم الحالي: <span id="font-size-value" class="font-bold"></span></div>
+                    </div>
+
+                    <div class="bg-[#16181c] rounded-2xl p-4 border custom-border">
+                        <div class="flex items-center justify-between gap-3 mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg">الثيمات الاحترافية</h3>
+                                <p class="text-sm text-gray-500">3 ثيمات داكنة و3 ثيمات فاتحة</p>
+                            </div>
+                            <button id="reset-style-btn" class="px-3 py-1.5 border custom-border rounded-full text-sm hover-bg">إعادة الافتراضي</button>
+                        </div>
+                        <div id="theme-options" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    </div>
+                </div>
             </section>
         </main>
 
@@ -322,18 +420,128 @@
         <button class="mobile-nav-btn text-gray-500" data-view="notifications-view"><i data-lucide="bell" class="w-6 h-6"></i></button>
         <button class="mobile-nav-btn text-gray-500" data-view="messages-view"><i data-lucide="mail" class="w-6 h-6"></i></button>
         <button class="mobile-nav-btn text-gray-500" data-view="profile-view"><i data-lucide="user" class="w-6 h-6"></i></button>
+        <button class="mobile-nav-btn text-gray-500" data-view="friends-view"><i data-lucide="users" class="w-6 h-6"></i></button>
+        <button class="mobile-nav-btn text-gray-500" data-view="settings-view"><i data-lucide="settings" class="w-6 h-6"></i></button>
     </div>
 
     <script>
         const STORAGE_KEY = 'majra_state_v1';
-        const REMOTE_DB_BASE = 'https://vz3jut5t.ap-southeast.insforge.app';
-        const REMOTE_STATE_ENDPOINT = `${REMOTE_DB_BASE}/social/state`;
+        const API_KEY_STORAGE = 'majra_api_key';
+        const REMOTE_DB_BASE = window.MAJRA_API_BASE_URL || window.location.origin;
+        const REMOTE_HEALTH_ENDPOINT = `${REMOTE_DB_BASE}/health`;
+        const REMOTE_STATE_CANDIDATES = [
+            `${REMOTE_DB_BASE}/social/state`,
+            `${REMOTE_DB_BASE}/state`,
+            `${REMOTE_DB_BASE}/api/state`,
+            `${REMOTE_DB_BASE}/api/social/state`
+        ];
+
+        const THEME_PRESETS = [
+            {
+                id: 'dark-midnight',
+                name: 'ليلي احترافي',
+                mode: 'داكن',
+                vars: {
+                    '--app-bg': '#05070b',
+                    '--app-card': '#12151b',
+                    '--app-input': '#1b2028',
+                    '--app-border': '#2f3744',
+                    '--app-text': '#f3f6fb',
+                    '--app-muted': '#8e9aac',
+                    '--app-primary': '#23a7ff',
+                    '--hover-bg': 'rgba(255, 255, 255, 0.08)',
+                    '--glass-bg': 'rgba(6, 8, 12, 0.78)'
+                }
+            },
+            {
+                id: 'dark-emerald',
+                name: 'زمردي عميق',
+                mode: 'داكن',
+                vars: {
+                    '--app-bg': '#060d0b',
+                    '--app-card': '#12201b',
+                    '--app-input': '#1a2b24',
+                    '--app-border': '#2c433a',
+                    '--app-text': '#effcf6',
+                    '--app-muted': '#8bb4a4',
+                    '--app-primary': '#12b886',
+                    '--hover-bg': 'rgba(255, 255, 255, 0.07)',
+                    '--glass-bg': 'rgba(7, 13, 10, 0.78)'
+                }
+            },
+            {
+                id: 'dark-graphite',
+                name: 'جرافيت فاخر',
+                mode: 'داكن',
+                vars: {
+                    '--app-bg': '#101114',
+                    '--app-card': '#1a1c20',
+                    '--app-input': '#25282e',
+                    '--app-border': '#343942',
+                    '--app-text': '#f5f6f7',
+                    '--app-muted': '#9ea5b0',
+                    '--app-primary': '#ff7b2f',
+                    '--hover-bg': 'rgba(255, 255, 255, 0.08)',
+                    '--glass-bg': 'rgba(16, 17, 20, 0.82)'
+                }
+            },
+            {
+                id: 'light-sky',
+                name: 'نهار سماوي',
+                mode: 'فاتح',
+                vars: {
+                    '--app-bg': '#f4f8ff',
+                    '--app-card': '#ffffff',
+                    '--app-input': '#eef4ff',
+                    '--app-border': '#cfd9ea',
+                    '--app-text': '#0f172a',
+                    '--app-muted': '#5b6b84',
+                    '--app-primary': '#1677ff',
+                    '--hover-bg': 'rgba(15, 23, 42, 0.06)',
+                    '--glass-bg': 'rgba(244, 248, 255, 0.8)'
+                }
+            },
+            {
+                id: 'light-sand',
+                name: 'رملي ناعم',
+                mode: 'فاتح',
+                vars: {
+                    '--app-bg': '#f9f6f0',
+                    '--app-card': '#ffffff',
+                    '--app-input': '#f4eee2',
+                    '--app-border': '#dccfb7',
+                    '--app-text': '#2a2216',
+                    '--app-muted': '#7f7158',
+                    '--app-primary': '#b7791f',
+                    '--hover-bg': 'rgba(42, 34, 22, 0.06)',
+                    '--glass-bg': 'rgba(249, 246, 240, 0.84)'
+                }
+            },
+            {
+                id: 'light-mint',
+                name: 'نعناعي عصري',
+                mode: 'فاتح',
+                vars: {
+                    '--app-bg': '#edf8f5',
+                    '--app-card': '#ffffff',
+                    '--app-input': '#e3f3ee',
+                    '--app-border': '#bfdacf',
+                    '--app-text': '#10231d',
+                    '--app-muted': '#54766b',
+                    '--app-primary': '#0ea47a',
+                    '--hover-bg': 'rgba(16, 35, 29, 0.06)',
+                    '--glass-bg': 'rgba(237, 248, 245, 0.82)'
+                }
+            }
+        ];
 
         const defaultState = {
             currentUser: {
                 name: 'مستخدم تجريبي',
                 username: 'demo_user',
                 bio: 'مطور ومهتم بتجارب المستخدم ومنصات التواصل.',
+                avatarImage: '',
+                coverImage: '',
             },
             posts: [
                 {
@@ -425,11 +633,17 @@
             ],
             activeConversationId: 'm1',
             feedFilter: 'all',
-            activeView: 'home-view'
+            activeView: 'home-view',
+            themeId: 'dark-midnight',
+            fontScale: 100
         };
 
         let state = loadState();
         let syncTimer = null;
+        let discoveredStateEndpoint = null;
+        let remoteHealthy = false;
+        let selectedLocalImage = '';
+        let storageWarningShown = false;
 
         const appViews = [...document.querySelectorAll('.app-view')];
         const navButtons = [...document.querySelectorAll('.nav-btn')];
@@ -439,15 +653,112 @@
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (!raw) return structuredClone(defaultState);
-                return { ...structuredClone(defaultState), ...JSON.parse(raw) };
+                const parsed = JSON.parse(raw);
+                return {
+                    ...structuredClone(defaultState),
+                    ...parsed,
+                    currentUser: {
+                        ...structuredClone(defaultState).currentUser,
+                        ...(parsed.currentUser || {})
+                    }
+                };
             } catch {
                 return structuredClone(defaultState);
             }
         }
 
         function saveState() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            persistStateToLocalStorage();
             scheduleRemoteSync();
+        }
+
+        function tryWriteLocalState(payload) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        }
+
+        function isQuotaExceededError(error) {
+            if (!error) return false;
+            return error.name === 'QuotaExceededError' || error.code === 22 || error.code === 1014;
+        }
+
+        function showStorageWarning(message) {
+            if (storageWarningShown) return;
+            storageWarningShown = true;
+            setTimeout(() => {
+                alert(message);
+            }, 50);
+        }
+
+        function persistStateToLocalStorage() {
+            try {
+                tryWriteLocalState(state);
+                return;
+            } catch (error) {
+                if (!isQuotaExceededError(error)) throw error;
+            }
+
+            const compact = structuredClone(state);
+
+            compact.posts = compact.posts.map((post) => ({
+                ...post,
+                author: {
+                    ...post.author,
+                    avatarImage: ''
+                }
+            }));
+
+            try {
+                tryWriteLocalState(compact);
+                state = compact;
+                showStorageWarning('تم تقليل بعض الصور المحلية بسبب امتلاء التخزين المحلي.');
+                return;
+            } catch (error) {
+                if (!isQuotaExceededError(error)) throw error;
+            }
+
+            compact.posts = compact.posts.map((post) => ({
+                ...post,
+                image: post.image && post.image.startsWith('data:') ? '' : post.image
+            }));
+            compact.currentUser.coverImage = '';
+
+            try {
+                tryWriteLocalState(compact);
+                state = compact;
+                showStorageWarning('تم حذف صور منشورات وخلفية كبيرة للحفاظ على عمل التطبيق.');
+                return;
+            } catch (error) {
+                if (!isQuotaExceededError(error)) throw error;
+            }
+
+            compact.currentUser.avatarImage = '';
+            compact.posts = compact.posts.slice(0, 60);
+            compact.notifications = compact.notifications.slice(0, 80);
+
+            try {
+                tryWriteLocalState(compact);
+                state = compact;
+                showStorageWarning('تم تقليل البيانات المحلية بشكل أكبر بسبب سعة التخزين.');
+            } catch {
+                showStorageWarning('تعذر حفظ البيانات محلياً بسبب امتلاء التخزين.');
+            }
+        }
+
+        function getApiKey() {
+            return (window.MAJRA_API_KEY || localStorage.getItem(API_KEY_STORAGE) || '').trim();
+        }
+
+        function buildRemoteHeaders(includeJson = false) {
+            const headers = { 'Accept': 'application/json' };
+            if (includeJson) headers['Content-Type'] = 'application/json';
+
+            const key = getApiKey();
+            if (key) {
+                headers['x-api-key'] = key;
+                headers['Authorization'] = `Bearer ${key}`;
+            }
+
+            return headers;
         }
 
         function setDbStatus(text, kind = 'warn') {
@@ -464,12 +775,60 @@
             }
         }
 
+        async function verifyRemoteHealth() {
+            try {
+                const res = await fetch(REMOTE_HEALTH_ENDPOINT, {
+                    method: 'GET',
+                    headers: buildRemoteHeaders(false)
+                });
+                if (!res.ok) return false;
+                const text = await res.text();
+                return text.trim().toUpperCase() === 'OK';
+            } catch {
+                return false;
+            }
+        }
+
+        async function discoverStateEndpoint() {
+            for (const endpoint of REMOTE_STATE_CANDIDATES) {
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'GET',
+                        headers: buildRemoteHeaders(false)
+                    });
+                    if (!res.ok) continue;
+                    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+                    if (!contentType.includes('application/json')) continue;
+                    discoveredStateEndpoint = endpoint;
+                    return endpoint;
+                } catch {
+                }
+            }
+            return null;
+        }
+
         async function pullRemoteState() {
             setDbStatus('جاري الاتصال بالخادم...', 'warn');
+
             try {
-                const res = await fetch(REMOTE_STATE_ENDPOINT, {
+                remoteHealthy = await verifyRemoteHealth();
+                if (!remoteHealthy) {
+                    setDbStatus('الخادم غير متاح حالياً (وضع محلي)', 'warn');
+                    return;
+                }
+
+                if (!discoveredStateEndpoint) {
+                    await discoverStateEndpoint();
+                }
+
+                if (!discoveredStateEndpoint) {
+                    setDbStatus('الخادم متاح لكن مسار البيانات غير معروف', 'warn');
+                    return;
+                }
+
+                const res = await fetch(discoveredStateEndpoint, {
                     method: 'GET',
-                    headers: { 'Accept': 'application/json' }
+                    headers: buildRemoteHeaders(false)
                 });
 
                 if (!res.ok) {
@@ -483,10 +842,19 @@
                     return;
                 }
 
-                state = { ...structuredClone(defaultState), ...state, ...remote };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                state = {
+                    ...structuredClone(defaultState),
+                    ...state,
+                    ...remote,
+                    currentUser: {
+                        ...structuredClone(defaultState).currentUser,
+                        ...(state.currentUser || {}),
+                        ...(remote.currentUser || {})
+                    }
+                };
+                persistStateToLocalStorage();
                 refreshAll();
-                setDbStatus('متصل بقاعدة البيانات', 'ok');
+                setDbStatus('متصل بقاعدة البيانات ومحمّل', 'ok');
             } catch {
                 setDbStatus('الربط غير متاح حالياً (محلي)', 'warn');
             }
@@ -494,16 +862,27 @@
 
         async function pushRemoteState() {
             try {
-                const res = await fetch(REMOTE_STATE_ENDPOINT, {
+                if (!remoteHealthy) return;
+                if (!discoveredStateEndpoint) return;
+
+                const putRes = await fetch(discoveredStateEndpoint, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: buildRemoteHeaders(true),
                     body: JSON.stringify(state)
                 });
 
-                if (res.ok) {
+                if (putRes.ok) {
+                    setDbStatus('تمت المزامنة مع قاعدة البيانات', 'ok');
+                    return;
+                }
+
+                const postRes = await fetch(discoveredStateEndpoint, {
+                    method: 'POST',
+                    headers: buildRemoteHeaders(true),
+                    body: JSON.stringify(state)
+                });
+
+                if (postRes.ok) {
                     setDbStatus('تمت المزامنة مع قاعدة البيانات', 'ok');
                 } else {
                     setDbStatus('تعذر حفظ التغييرات على الخادم', 'warn');
@@ -518,6 +897,59 @@
             syncTimer = setTimeout(() => {
                 pushRemoteState();
             }, 450);
+        }
+
+        function applyTheme(themeId) {
+            const selected = THEME_PRESETS.find((theme) => theme.id === themeId) || THEME_PRESETS[0];
+            Object.entries(selected.vars).forEach(([key, value]) => {
+                document.documentElement.style.setProperty(key, value);
+            });
+            state.themeId = selected.id;
+        }
+
+        function applyFontScale(scale) {
+            const safeScale = Math.min(125, Math.max(85, Number(scale) || 100));
+            document.documentElement.style.fontSize = `${safeScale}%`;
+            state.fontScale = safeScale;
+
+            const range = document.getElementById('font-size-range');
+            const valueEl = document.getElementById('font-size-value');
+            if (range) range.value = String(safeScale);
+            if (valueEl) valueEl.textContent = `${safeScale}%`;
+        }
+
+        function renderSettings() {
+            const container = document.getElementById('theme-options');
+            if (!container) return;
+
+            container.innerHTML = THEME_PRESETS.map((theme) => {
+                const previewBg = theme.vars['--app-bg'];
+                const previewCard = theme.vars['--app-card'];
+                const previewPrimary = theme.vars['--app-primary'];
+                const active = state.themeId === theme.id ? 'active' : '';
+
+                return `
+                    <button class="theme-option ${active} rounded-2xl p-3 text-right" data-theme-id="${theme.id}">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h4 class="font-bold">${theme.name}</h4>
+                                <p class="text-xs text-gray-500">${theme.mode}</p>
+                            </div>
+                            <div class="w-3 h-3 rounded-full" style="background:${previewPrimary}"></div>
+                        </div>
+                        <div class="rounded-xl p-2" style="background:${previewBg}">
+                            <div class="rounded-lg p-2 mb-2" style="background:${previewCard}">
+                                <div class="w-10 h-2 rounded" style="background:${previewPrimary}; opacity:.9"></div>
+                            </div>
+                            <div class="rounded-lg p-2" style="background:${previewCard}; opacity:.8">
+                                <div class="w-16 h-2 rounded bg-white/30"></div>
+                            </div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+
+            applyFontScale(state.fontScale);
         }
 
         function avatarColor(char) {
@@ -535,6 +967,101 @@
         function nowTime() {
             const d = new Date();
             return d.toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function fallbackAvatarLetter(name) {
+            return (name || 'م').trim().charAt(0) || 'م';
+        }
+
+        function applyAvatarToElement(element, image, fallbackLetter) {
+            if (!element) return;
+
+            if (image) {
+                element.style.background = 'transparent';
+                element.innerHTML = `<img src="${image}" alt="avatar" class="w-full h-full rounded-full object-cover" />`;
+                return;
+            }
+
+            element.style.background = avatarColor(fallbackLetter);
+            element.textContent = fallbackLetter;
+        }
+
+        function applyCoverToElement(image) {
+            const cover = document.getElementById('profile-cover');
+            if (!cover) return;
+
+            if (image) {
+                cover.style.backgroundImage = `url(${image})`;
+                cover.style.backgroundSize = 'cover';
+                cover.style.backgroundPosition = 'center';
+                return;
+            }
+
+            cover.style.backgroundImage = 'linear-gradient(to left, #0d2233, #113149, rgba(29, 155, 240, 0.8))';
+            cover.style.backgroundSize = 'cover';
+            cover.style.backgroundPosition = 'center';
+        }
+
+        function updateOwnedPostsAuthorMedia() {
+            const avatarLetter = fallbackAvatarLetter(state.currentUser.name);
+            state.posts = state.posts.map((post) => {
+                if (!post.owned) return post;
+                return {
+                    ...post,
+                    author: {
+                        ...post.author,
+                        avatar: avatarLetter,
+                        avatarImage: state.currentUser.avatarImage || ''
+                    }
+                };
+            });
+        }
+
+        function readLocalImage(file, maxSizeMb = 4, maxDimension = 1280, quality = 0.82) {
+            return new Promise((resolve, reject) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    reject(new Error('يرجى اختيار ملف صورة فقط.'));
+                    return;
+                }
+
+                const maxBytes = maxSizeMb * 1024 * 1024;
+                if (file.size > maxBytes) {
+                    reject(new Error(`حجم الصورة كبير. الحد الأقصى ${maxSizeMb}MB.`));
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const src = String(event.target?.result || '');
+                    const img = new Image();
+
+                    img.onload = () => {
+                        const width = img.width || 1;
+                        const height = img.height || 1;
+                        const ratio = Math.min(1, maxDimension / Math.max(width, height));
+                        const targetW = Math.max(1, Math.round(width * ratio));
+                        const targetH = Math.max(1, Math.round(height * ratio));
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = targetW;
+                        canvas.height = targetH;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            reject(new Error('تعذر تجهيز الصورة.'));
+                            return;
+                        }
+
+                        ctx.drawImage(img, 0, 0, targetW, targetH);
+                        const out = canvas.toDataURL('image/jpeg', quality);
+                        resolve(out);
+                    };
+
+                    img.onerror = () => reject(new Error('تعذر قراءة الصورة.'));
+                    img.src = src;
+                };
+                reader.onerror = () => reject(new Error('تعذر قراءة الصورة.'));
+                reader.readAsDataURL(file);
+            });
         }
 
         function notify(text) {
@@ -581,7 +1108,9 @@
                 'notifications-view': 'التنبيهات',
                 'messages-view': 'الرسائل',
                 'profile-view': 'الملف الشخصي',
-                'bookmarks-view': 'المحفوظات'
+                'bookmarks-view': 'المحفوظات',
+                'friends-view': 'الأصدقاء',
+                'settings-view': 'الإعدادات'
             };
 
             const showTabs = viewId === 'home-view';
@@ -604,6 +1133,14 @@
                 renderBookmarks();
             }
 
+            if (viewId === 'friends-view') {
+                renderFriends();
+            }
+
+            if (viewId === 'settings-view') {
+                renderSettings();
+            }
+
             saveState();
         }
 
@@ -615,10 +1152,16 @@
                 ? `<div class="mt-3 rounded-2xl overflow-hidden border custom-border"><img src="${post.image}" alt="post-image" class="w-full max-h-80 object-cover"/></div>`
                 : '';
             const ownBadge = post.owned ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-[#1d9bf0]/20 text-[#1d9bf0]">منشورك</span>' : '';
+            const authorAvatar = post.author.avatarImage
+                ? `<img src="${post.author.avatarImage}" alt="avatar" class="w-full h-full rounded-full object-cover"/>`
+                : `${post.author.avatar}`;
+            const avatarStyle = post.author.avatarImage
+                ? ''
+                : `style="background:${avatarColor(post.author.avatar)}"`;
 
             return `
                 <article class="p-4 border-b custom-border hover-bg transition flex gap-3 fade-in" data-post-id="${post.id}">
-                    <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold" style="background:${avatarColor(post.author.avatar)}">${post.author.avatar}</div>
+                    <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold overflow-hidden" ${avatarStyle}>${authorAvatar}</div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-1 mb-1 flex-wrap">
                             <span class="font-bold">${post.author.name}</span>
@@ -787,17 +1330,16 @@
 
         function renderProfile() {
             const u = state.currentUser;
-            const avatar = (u.name || 'م').trim().charAt(0);
+            const avatar = fallbackAvatarLetter(u.name);
 
-            document.getElementById('account-avatar').textContent = avatar;
-            document.getElementById('account-avatar').style.background = avatarColor(avatar);
+            applyAvatarToElement(document.getElementById('account-avatar'), u.avatarImage, avatar);
             document.getElementById('account-name').textContent = u.name;
             document.getElementById('account-username').textContent = `@${u.username}`;
 
-            document.getElementById('composer-avatar').textContent = avatar;
-            document.getElementById('composer-avatar').style.background = avatarColor(avatar);
+            applyAvatarToElement(document.getElementById('composer-avatar'), u.avatarImage, avatar);
 
-            document.getElementById('profile-avatar').textContent = avatar;
+            applyAvatarToElement(document.getElementById('profile-avatar'), u.avatarImage, avatar);
+            applyCoverToElement(u.coverImage);
             document.getElementById('profile-name').textContent = u.name;
             document.getElementById('profile-username').textContent = `@${u.username}`;
             document.getElementById('profile-bio').textContent = u.bio;
@@ -838,17 +1380,56 @@
             document.getElementById('following-count').textContent = String(38 + following);
         }
 
+        function renderFriends() {
+            const list = document.getElementById('friends-list');
+            const q = (document.getElementById('friends-search')?.value || '').trim().toLowerCase();
+            const friends = state.suggestions.filter((s) => {
+                const text = `${s.name} @${s.username}`.toLowerCase();
+                return text.includes(q);
+            });
+
+            const followingCount = state.suggestions.filter((s) => s.following).length;
+            const summary = document.getElementById('friends-summary');
+            if (summary) {
+                summary.textContent = `تتابع الآن ${followingCount} من أصل ${state.suggestions.length} حسابات.`;
+            }
+
+            if (!friends.length) {
+                list.innerHTML = '<div class="p-8 text-center text-gray-500">لا توجد نتائج مطابقة.</div>';
+                return;
+            }
+
+            list.innerHTML = friends.map((friend) => `
+                <div class="flex items-center justify-between px-4 py-4 hover-bg">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold" style="background:${avatarColor(friend.avatar)}">${friend.avatar}</div>
+                        <div class="min-w-0">
+                            <div class="font-bold truncate">${friend.name}</div>
+                            <div class="text-sm text-gray-500 truncate">@${friend.username}</div>
+                        </div>
+                    </div>
+                    <button class="follow-btn ${friend.following ? 'bg-transparent border custom-border text-white' : 'bg-white text-black'} font-bold text-sm px-4 py-1.5 rounded-full" data-suggestion-id="${friend.id}">
+                        ${friend.following ? 'إلغاء المتابعة' : 'متابعة'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
         function refreshAll() {
+            applyTheme(state.themeId);
+            applyFontScale(state.fontScale);
             renderProfile();
             renderFeed();
             renderExplore();
             renderTrends();
             renderSuggestions();
+            renderFriends();
             renderNotifications();
             renderConversations();
             renderChat();
             renderProfilePosts();
             renderBookmarks();
+            renderSettings();
             renderStats();
             updateNotificationBadge();
             setActiveView(state.activeView || 'home-view');
@@ -917,6 +1498,16 @@
                 return;
             }
 
+            const themeBtn = e.target.closest('.theme-option');
+            if (themeBtn) {
+                const themeId = themeBtn.dataset.themeId;
+                applyTheme(themeId);
+                saveState();
+                renderSettings();
+                refreshAll();
+                return;
+            }
+
             const followBtn = e.target.closest('.follow-btn');
             if (followBtn) {
                 const id = followBtn.dataset.suggestionId;
@@ -927,6 +1518,14 @@
                 saveState();
                 refreshAll();
             }
+        });
+
+        document.getElementById('reset-style-btn').addEventListener('click', () => {
+            applyTheme('dark-midnight');
+            applyFontScale(100);
+            saveState();
+            renderSettings();
+            refreshAll();
         });
 
         document.getElementById('show-more-trends').addEventListener('click', () => {
@@ -941,6 +1540,17 @@
 
         const postInput = document.getElementById('post-input');
         const postImageInput = document.getElementById('post-image-input');
+        const postFileInput = document.getElementById('post-file-input');
+        const selectLocalImageBtn = document.getElementById('select-local-image-btn');
+        const localImagePreview = document.getElementById('local-image-preview');
+        const localImagePreviewImg = document.getElementById('local-image-preview-img');
+        const clearLocalImageBtn = document.getElementById('clear-local-image');
+        const profileAvatarInput = document.getElementById('profile-avatar-input');
+        const profileCoverInput = document.getElementById('profile-cover-input');
+        const changeAvatarBtn = document.getElementById('change-avatar-btn');
+        const changeCoverBtn = document.getElementById('change-cover-btn');
+        const removeAvatarBtn = document.getElementById('remove-avatar-btn');
+        const removeCoverBtn = document.getElementById('remove-cover-btn');
         const publishBtn = document.getElementById('publish-btn');
 
         function updatePublishButton() {
@@ -949,15 +1559,104 @@
             publishBtn.classList.toggle('opacity-50', !canPublish);
         }
 
+        function clearLocalImageSelection() {
+            selectedLocalImage = '';
+            if (postFileInput) postFileInput.value = '';
+            if (localImagePreviewImg) localImagePreviewImg.src = '';
+            if (localImagePreview) localImagePreview.classList.add('hidden');
+        }
+
         postInput.addEventListener('input', updatePublishButton);
         postImageInput.addEventListener('input', updatePublishButton);
 
+        selectLocalImageBtn.addEventListener('click', () => {
+            postFileInput.click();
+        });
+
+        clearLocalImageBtn.addEventListener('click', () => {
+            clearLocalImageSelection();
+        });
+
+        postFileInput.addEventListener('change', async () => {
+            const file = postFileInput.files && postFileInput.files[0];
+            if (!file) return;
+
+            try {
+                selectedLocalImage = await readLocalImage(file, 3, 1280, 0.82);
+                localImagePreviewImg.src = selectedLocalImage;
+                localImagePreview.classList.remove('hidden');
+            } catch (error) {
+                alert(error.message || 'تعذر تجهيز الصورة.');
+                clearLocalImageSelection();
+            } finally {
+                postFileInput.value = '';
+            }
+        });
+
+        changeAvatarBtn.addEventListener('click', () => {
+            profileAvatarInput.click();
+        });
+
+        changeCoverBtn.addEventListener('click', () => {
+            profileCoverInput.click();
+        });
+
+        removeAvatarBtn.addEventListener('click', () => {
+            state.currentUser.avatarImage = '';
+            updateOwnedPostsAuthorMedia();
+            notify('تم حذف صورة البروفايل.');
+            saveState();
+            refreshAll();
+        });
+
+        removeCoverBtn.addEventListener('click', () => {
+            state.currentUser.coverImage = '';
+            notify('تم حذف صورة الخلفية.');
+            saveState();
+            refreshAll();
+        });
+
+        profileAvatarInput.addEventListener('change', async () => {
+            const file = profileAvatarInput.files && profileAvatarInput.files[0];
+            if (!file) return;
+
+            try {
+                const image = await readLocalImage(file, 3, 512, 0.85);
+                state.currentUser.avatarImage = image;
+                updateOwnedPostsAuthorMedia();
+                notify('تم تحديث صورة البروفايل.');
+                saveState();
+                refreshAll();
+            } catch (error) {
+                alert(error.message || 'تعذر تحديث صورة البروفايل.');
+            } finally {
+                profileAvatarInput.value = '';
+            }
+        });
+
+        profileCoverInput.addEventListener('change', async () => {
+            const file = profileCoverInput.files && profileCoverInput.files[0];
+            if (!file) return;
+
+            try {
+                const image = await readLocalImage(file, 4, 1600, 0.82);
+                state.currentUser.coverImage = image;
+                notify('تم تحديث صورة الخلفية.');
+                saveState();
+                refreshAll();
+            } catch (error) {
+                alert(error.message || 'تعذر تحديث صورة الخلفية.');
+            } finally {
+                profileCoverInput.value = '';
+            }
+        });
+
         publishBtn.addEventListener('click', () => {
             const content = postInput.value.trim();
-            const image = postImageInput.value.trim();
+            const image = selectedLocalImage || postImageInput.value.trim();
             if (!content) return;
 
-            const avatar = (state.currentUser.name || 'م').trim().charAt(0);
+            const avatar = fallbackAvatarLetter(state.currentUser.name);
 
             state.posts.unshift({
                 id: `p_${Date.now()}`,
@@ -965,7 +1664,8 @@
                     name: state.currentUser.name,
                     username: state.currentUser.username,
                     verified: false,
-                    avatar
+                    avatar,
+                    avatarImage: state.currentUser.avatarImage || ''
                 },
                 content,
                 image,
@@ -983,6 +1683,7 @@
 
             postInput.value = '';
             postImageInput.value = '';
+            clearLocalImageSelection();
             updatePublishButton();
             notify('تم نشر منشورك بنجاح.');
             setActiveView('home-view');
@@ -1017,6 +1718,12 @@
         });
 
         document.getElementById('explore-search').addEventListener('input', renderExplore);
+        document.getElementById('friends-search').addEventListener('input', renderFriends);
+        document.getElementById('font-size-range').addEventListener('input', (e) => {
+            applyFontScale(e.target.value);
+            saveState();
+        });
+
         document.getElementById('global-search').addEventListener('input', (e) => {
             const q = e.target.value.trim();
             document.getElementById('explore-search').value = q;
@@ -1065,6 +1772,7 @@
             state.currentUser.username = username.trim().replace('@', '') || state.currentUser.username;
             state.currentUser.bio = bio.trim() || state.currentUser.bio;
 
+            const newAvatar = fallbackAvatarLetter(state.currentUser.name);
             state.posts = state.posts.map((post) => {
                 if (!post.owned) return post;
                 return {
@@ -1073,7 +1781,8 @@
                         ...post.author,
                         name: state.currentUser.name,
                         username: state.currentUser.username,
-                        avatar: state.currentUser.name.trim().charAt(0)
+                        avatar: newAvatar,
+                        avatarImage: state.currentUser.avatarImage || ''
                     }
                 };
             });
@@ -1106,6 +1815,8 @@
                     name,
                     username,
                     bio: bio || defaultState.currentUser.bio,
+                    avatarImage: state.currentUser.avatarImage || '',
+                    coverImage: state.currentUser.coverImage || '',
                 };
 
                 localStorage.setItem('majra_auth_done', '1');
