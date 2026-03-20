@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Majra - منصة تواصل اجتماعي</title>
+    <title>GlobalTawasul - منصة تواصل اجتماعي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -132,7 +132,7 @@
 
     <div id="auth-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center px-4">
         <div class="w-full max-w-md bg-[#0f1115] border custom-border rounded-2xl p-6 fade-in">
-            <h2 class="text-2xl font-black mb-2">أهلاً بك في Majra</h2>
+            <h2 class="text-2xl font-black mb-2">أهلاً بك في GlobalTawasul</h2>
             <p class="text-sm text-gray-400 mb-6">أنشئ حسابك التجريبي للبدء.</p>
             <div class="space-y-3">
                 <input id="auth-name" type="text" placeholder="الاسم الكامل" class="modal-input bg-black border custom-border w-full rounded-xl px-4 py-3 focus:border-[#1d9bf0]">
@@ -261,9 +261,20 @@
             </section>
 
             <section id="messages-view" class="app-view hidden-view h-[calc(100vh-130px)] flex">
-                <div class="w-2/5 border-l custom-border overflow-y-auto hide-scrollbar" id="conversation-list"></div>
+                <div class="w-2/5 border-l custom-border overflow-y-auto hide-scrollbar flex flex-col">
+                    <div class="p-4 border-b custom-border flex items-center justify-between">
+                        <h2 class="font-bold">الرسائل</h2>
+                        <button id="new-chat-btn" class="hover-bg p-2 rounded-full" title="محادثة جديدة">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto hide-scrollbar" id="conversation-list"></div>
+                </div>
                 <div class="w-3/5 flex flex-col">
-                    <div id="chat-header" class="p-4 border-b custom-border font-bold">اختر محادثة</div>
+                    <div id="chat-header" class="p-4 border-b custom-border font-bold flex items-center justify-between">
+                        <span>اختر محادثة</span>
+                        <button id="view-profile-btn" class="text-[#1d9bf0] text-sm hidden">عرض الملف الشخصي</button>
+                    </div>
                     <div id="chat-messages" class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-3"></div>
                     <div class="p-4 border-t custom-border flex gap-2">
                         <input id="chat-input" type="text" placeholder="اكتب رسالة..." class="search-input flex-1 bg-[#202327] rounded-full py-2 px-4 border border-transparent focus:bg-black focus:border-[#1d9bf0]">
@@ -313,8 +324,13 @@
 
             <section id="friends-view" class="app-view hidden-view">
                 <div class="p-4 border-b custom-border">
-                    <h2 class="text-xl font-bold">الأصدقاء</h2>
+                    <h2 class="text-xl font-bold">الأصدقاء والمتابعة</h2>
                     <p class="text-sm text-gray-500">تابع الأشخاص الذين تهتم بمحتواهم.</p>
+                </div>
+                <div class="flex border-b custom-border">
+                    <button id="friends-tab-following" class="flex-1 text-center py-4 font-bold border-b-4 border-[#1d9bf0]">المتابَعون</button>
+                    <button id="friends-tab-followers" class="flex-1 text-center py-4 text-gray-500 hover-bg">المتابعون</button>
+                    <button id="friends-tab-all" class="flex-1 text-center py-4 text-gray-500 hover-bg">الكل</button>
                 </div>
                 <div class="p-4 border-b custom-border">
                     <input id="friends-search" type="text" placeholder="ابحث عن صديق أو حساب..." class="search-input bg-[#202327] w-full rounded-full py-3 px-5 border border-transparent focus:bg-black focus:border-[#1d9bf0]">
@@ -350,6 +366,11 @@
                             <button id="reset-style-btn" class="px-3 py-1.5 border custom-border rounded-full text-sm hover-bg">إعادة الافتراضي</button>
                         </div>
                         <div id="theme-options" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    </div>
+                    <div class="mt-6">
+                        <button id="logout-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-xl transition">
+                            تسجيل الخروج
+                        </button>
                     </div>
                 </div>
             </section>
@@ -409,7 +430,7 @@
                 <a href="#" class="hover:underline">سياسة الكوكيز</a>
                 <a href="#" class="hover:underline">إمكانية الوصول</a>
                 <a href="#" class="hover:underline">معلومات الإعلان</a>
-                <span>© 2026 Majra</span>
+                <span>© 2026 GlobalTawasul</span>
             </div>
         </aside>
     </div>
@@ -546,8 +567,8 @@
             posts: [
                 {
                     id: 'p1',
-                    author: { name: 'فريق الدعم', username: 'MajraSupport', verified: true, avatar: 'د' },
-                    content: 'مرحباً بك في Majra. هذه نسخة عربية متكاملة مع نشر فوري، رسائل، تنبيهات، محفوظات، وملف شخصي قابل للتعديل.',
+                    author: { name: 'فريق الدعم', username: 'GlobalTawasulSupport', verified: true, avatar: 'د' },
+                    content: 'مرحباً بك في GlobalTawasul. هذه نسخة عربية متكاملة مع نشر فوري، رسائل، تنبيهات، محفوظات، وملف شخصي قابل للتعديل.',
                     image: '',
                     time: '2س',
                     likes: 128,
@@ -608,7 +629,9 @@
                 { id: 's4', name: 'مطور واجهات', username: 'ui_maker', avatar: 'و', following: false }
             ],
             notifications: [
-                { id: 'n1', text: 'مرحباً بك! أكمل ملفك الشخصي لزيادة التفاعل.', time: 'الآن', read: false }
+                { id: 'n1', text: 'مرحباً بك في GlobalTawasul!', type: 'success', icon: 'check-circle', time: 'الآن', read: false },
+                { id: 'n2', text: 'استكشف المنشورات وتفاعل مع الآخرين.', type: 'info', icon: 'bell', time: 'الآن', read: false },
+                { id: 'n3', text: 'تابع حسابات أخرى لرؤية منشوراتهم.', type: 'follow', icon: 'user-plus', time: 'الآن', read: false }
             ],
             messages: [
                 {
@@ -1064,16 +1087,27 @@
             });
         }
 
-        function notify(text) {
+        function notify(text, type = 'info') {
+            const icons = {
+                'info': 'bell',
+                'success': 'check-circle',
+                'warning': 'alert-circle',
+                'message': 'mail',
+                'follow': 'user-plus',
+                'like': 'heart'
+            };
             state.notifications.unshift({
                 id: `n_${Date.now()}`,
                 text,
+                type,
+                icon: icons[type] || 'bell',
                 time: 'الآن',
                 read: false
             });
             updateNotificationBadge();
             renderNotifications();
             saveState();
+            showToast(text, type);
         }
 
         function updateNotificationBadge() {
@@ -1117,7 +1151,7 @@
             document.getElementById('home-tabs').classList.toggle('hidden', !showTabs);
             document.getElementById('refresh-feed').classList.toggle('hidden', viewId !== 'home-view');
 
-            document.getElementById('view-title').textContent = titles[viewId] || 'Majra';
+            document.getElementById('view-title').textContent = titles[viewId] || 'GlobalTawasul';
 
             if (viewId === 'notifications-view') {
                 state.notifications = state.notifications.map((n) => ({ ...n, read: true }));
@@ -1271,15 +1305,25 @@
                 return;
             }
 
+            const iconColors = {
+                'info': 'bg-[#1d9bf0]/20 text-[#1d9bf0]',
+                'success': 'bg-[#00ba7c]/20 text-[#00ba7c]',
+                'warning': 'bg-[#f59e0b]/20 text-[#f59e0b]',
+                'message': 'bg-purple-500/20 text-purple-500',
+                'follow': 'bg-green-500/20 text-green-500',
+                'like': 'bg-pink-500/20 text-pink-500'
+            };
+
             list.innerHTML = state.notifications.map((n) => `
-                <div class="p-4 flex items-start gap-3 ${n.read ? 'opacity-80' : 'bg-[#0a1824]'}">
-                    <div class="w-9 h-9 rounded-full bg-[#1d9bf0]/20 text-[#1d9bf0] flex items-center justify-center">
-                        <i data-lucide="bell" class="w-4 h-4"></i>
+                <div class="p-4 flex items-start gap-3 ${n.read ? 'opacity-80 hover-bg' : 'bg-[#0a1824]'} cursor-pointer notification-item" data-notif-id="${n.id}">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center ${iconColors[n.type] || iconColors['info']}">
+                        <i data-lucide="${n.icon || 'bell'}" class="w-4 h-4"></i>
                     </div>
-                    <div>
+                    <div class="flex-1 min-w-0">
                         <p class="text-sm leading-6">${n.text}</p>
                         <span class="text-xs text-gray-500">${n.time}</span>
                     </div>
+                    ${!n.read ? '<div class="w-2 h-2 rounded-full bg-[#1d9bf0]"></div>' : ''}
                 </div>
             `).join('');
             lucide.createIcons();
@@ -1308,14 +1352,27 @@
             const convo = state.messages.find((m) => m.id === state.activeConversationId);
             const chatHeader = document.getElementById('chat-header');
             const chatMessages = document.getElementById('chat-messages');
+            const viewProfileBtn = document.getElementById('view-profile-btn');
 
             if (!convo) {
-                chatHeader.textContent = 'اختر محادثة';
-                chatMessages.innerHTML = '<div class="text-gray-500 text-center mt-10">لا توجد محادثة محددة.</div>';
+                chatHeader.innerHTML = '<span>اختر محادثة</span>';
+                if (viewProfileBtn) viewProfileBtn.classList.add('hidden');
+                chatMessages.innerHTML = '<div class="text-gray-500 text-center mt-10">اختر محادثة من القائمة أو ابدأ محادثة جديدة.</div>';
                 return;
             }
 
-            chatHeader.textContent = convo.with;
+            chatHeader.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style="background:${avatarColor(convo.avatar)}">${convo.avatar}</div>
+                    <span>${convo.with}</span>
+                </div>
+            `;
+            
+            if (viewProfileBtn) {
+                viewProfileBtn.classList.remove('hidden');
+                viewProfileBtn.onclick = () => viewUserProfile(convo.username);
+            }
+
             chatMessages.innerHTML = convo.messages.map((msg) => `
                 <div class="flex ${msg.sender === 'me' ? 'justify-start' : 'justify-end'}">
                     <div class="max-w-[80%] px-4 py-2 rounded-2xl ${msg.sender === 'me' ? 'bg-[#1d9bf0]' : 'bg-[#202327]'}">
@@ -1366,6 +1423,110 @@
             list.innerHTML = saved.map((p) => postCard(p)).join('');
             lucide.createIcons();
         }
+        
+        function viewUserProfile(username) {
+            const user = state.suggestions.find(s => s.username === username);
+            if (user) {
+                showUserProfileModal(user);
+            }
+        }
+        
+        function showUserProfileModal(user) {
+            const existing = document.getElementById('user-profile-modal');
+            if (existing) existing.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'user-profile-modal';
+            modal.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="w-full max-w-lg bg-[#0f1115] border custom-border rounded-2xl overflow-hidden fade-in">
+                    <div class="p-4 flex items-center justify-between border-b custom-border">
+                        <h2 class="text-xl font-bold">${user.name}</h2>
+                        <button onclick="document.getElementById('user-profile-modal').remove()" class="hover-bg p-2 rounded-full">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="p-4 text-center">
+                        <div class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center font-bold text-3xl" style="background:${avatarColor(user.avatar)}">${user.avatar}</div>
+                        <h3 class="text-xl font-bold">${user.name}</h3>
+                        <p class="text-gray-500">@${user.username}</p>
+                    </div>
+                    <div class="p-4 border-t custom-border flex gap-3">
+                        <button onclick="startChatWith('${user.username}')" class="flex-1 bg-[#1d9bf0] text-white py-3 rounded-xl font-bold hover:bg-[#1583d6]">
+                            <i data-lucide="mail" class="w-4 h-4 inline ml-1"></i> مراسلة
+                        </button>
+                        <button onclick="toggleFollowFromModal('${user.id}')" class="flex-1 bg-white text-black py-3 rounded-xl font-bold hover:bg-gray-200 follow-modal-btn" data-user-id="${user.id}">
+                            ${user.following ? 'إلغاء المتابعة' : 'تابِع'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            lucide.createIcons();
+        }
+        
+        function startChatWith(username) {
+            let conv = state.messages.find(m => m.username === username);
+            if (!conv) {
+                const user = state.suggestions.find(s => s.username === username);
+                if (user) {
+                    conv = {
+                        id: `m_${Date.now()}`,
+                        with: user.name,
+                        username: user.username,
+                        avatar: user.avatar,
+                        messages: []
+                    };
+                    state.messages.push(conv);
+                }
+            }
+            if (conv) {
+                state.activeConversationId = conv.id;
+                document.getElementById('user-profile-modal')?.remove();
+                setActiveView('messages-view');
+                renderConversations();
+                renderChat();
+                saveState();
+            }
+        }
+        
+        function toggleFollowFromModal(userId) {
+            const user = state.suggestions.find(s => s.id === userId);
+            if (user) {
+                user.following = !user.following;
+                notify(user.following ? `بدأت متابعة ${user.name}.` : `أوقفت متابعة ${user.name}.`);
+                saveState();
+                renderFriends();
+                renderSuggestions();
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const existing = document.getElementById('toast-container');
+            if (existing) existing.remove();
+            
+            const colors = {
+                'info': 'bg-[#1d9bf0]',
+                'success': 'bg-[#00ba7c]',
+                'warning': 'bg-[#f59e0b]',
+                'message': 'bg-purple-500',
+                'follow': 'bg-green-500',
+                'like': 'bg-pink-500'
+            };
+            
+            const toast = document.createElement('div');
+            toast.id = 'toast-container';
+            toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-full text-white font-bold shadow-lg fade-in';
+            toast.style.backgroundColor = colors[type] || colors['info'];
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
 
         function renderStats() {
             const likes = state.posts.reduce((sum, p) => sum + (p.liked ? 1 : 0), 0);
@@ -1380,39 +1541,70 @@
             document.getElementById('following-count').textContent = String(38 + following);
         }
 
+        let friendsTab = 'following';
+        
+        function updateFriendsTabs() {
+            const tabs = ['following', 'followers', 'all'];
+            tabs.forEach(tab => {
+                const btn = document.getElementById(`friends-tab-${tab}`);
+                if (btn) {
+                    if (tab === friendsTab) {
+                        btn.classList.add('font-bold', 'border-b-4', 'border-[#1d9bf0]');
+                        btn.classList.remove('text-gray-500');
+                    } else {
+                        btn.classList.remove('font-bold', 'border-b-4', 'border-[#1d9bf0]');
+                        btn.classList.add('text-gray-500');
+                    }
+                }
+            });
+        }
+        
         function renderFriends() {
             const list = document.getElementById('friends-list');
             const q = (document.getElementById('friends-search')?.value || '').trim().toLowerCase();
-            const friends = state.suggestions.filter((s) => {
-                const text = `${s.name} @${s.username}`.toLowerCase();
-                return text.includes(q);
-            });
-
+            
+            let filteredUsers = [...state.suggestions];
+            
+            if (friendsTab === 'following') {
+                filteredUsers = filteredUsers.filter(s => s.following);
+            }
+            
+            if (q) {
+                filteredUsers = filteredUsers.filter(s => 
+                    `${s.name} @${s.username}`.toLowerCase().includes(q)
+                );
+            }
+            
             const followingCount = state.suggestions.filter((s) => s.following).length;
+            
             const summary = document.getElementById('friends-summary');
             if (summary) {
-                summary.textContent = `تتابع الآن ${followingCount} من أصل ${state.suggestions.length} حسابات.`;
+                summary.innerHTML = `<div class="flex gap-4"><span>متابَعون: <strong>${followingCount}</strong></span><span>متابعة: <strong>${followingCount}</strong></span></div>`;
             }
 
-            if (!friends.length) {
-                list.innerHTML = '<div class="p-8 text-center text-gray-500">لا توجد نتائج مطابقة.</div>';
+            if (!filteredUsers.length) {
+                list.innerHTML = `<div class="p-8 text-center text-gray-500">${friendsTab === 'following' ? 'لم تتابع أي شخص بعد.' : 'لا توجد نتائج.'}</div>`;
+                lucide.createIcons();
                 return;
             }
 
-            list.innerHTML = friends.map((friend) => `
-                <div class="flex items-center justify-between px-4 py-4 hover-bg">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold" style="background:${avatarColor(friend.avatar)}">${friend.avatar}</div>
-                        <div class="min-w-0">
-                            <div class="font-bold truncate">${friend.name}</div>
-                            <div class="text-sm text-gray-500 truncate">@${friend.username}</div>
+            list.innerHTML = filteredUsers.map((friend) => {
+                const isFollowing = state.suggestions.find(s => s.id === friend.id)?.following || false;
+                return `
+                <div class="flex items-center justify-between px-4 py-4 hover-bg cursor-pointer user-profile-card" data-username="${friend.username}" data-user-id="${friend.id}">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold user-avatar cursor-pointer" style="background:${avatarColor(friend.avatar)}">${friend.avatar}</div>
+                        <div class="min-w-0 flex-1 cursor-pointer" onclick="viewUserProfile('${friend.username}')">
+                            <div class="font-bold truncate user-name">${friend.name}</div>
+                            <div class="text-sm text-gray-500 truncate user-handle">@${friend.username}</div>
                         </div>
                     </div>
-                    <button class="follow-btn ${friend.following ? 'bg-transparent border custom-border text-white' : 'bg-white text-black'} font-bold text-sm px-4 py-1.5 rounded-full" data-suggestion-id="${friend.id}">
-                        ${friend.following ? 'إلغاء المتابعة' : 'متابعة'}
+                    <button class="follow-btn ${isFollowing ? 'bg-transparent border custom-border text-white' : 'bg-white text-black'} font-bold text-sm px-4 py-1.5 rounded-full" data-suggestion-id="${friend.id}">
+                        ${isFollowing ? 'متابَع' : 'تابِع'}
                     </button>
                 </div>
-            `).join('');
+            `}).join('');
+            lucide.createIcons();
         }
 
         function refreshAll() {
@@ -1443,25 +1635,26 @@
             if (action === 'like') {
                 post.liked = !post.liked;
                 post.likes += post.liked ? 1 : -1;
-                notify(post.liked ? 'تم تسجيل إعجابك بمنشور.' : 'تم إزالة الإعجاب.');
+                notify(post.liked ? `أعجبت بمنشور ${post.author.name}.` : 'تم إزالة الإعجاب.', post.liked ? 'like' : 'info');
             } else if (action === 'repost') {
                 post.reposted = !post.reposted;
                 post.reposts += post.reposted ? 1 : -1;
+                notify(post.reposted ? `تمت إعادة نشر منشور ${post.author.name}.` : 'تم إلغاء إعادة النشر.', 'success');
             } else if (action === 'bookmark') {
                 post.bookmarked = !post.bookmarked;
-                notify(post.bookmarked ? 'تم حفظ المنشور في المحفوظات.' : 'تمت إزالة المنشور من المحفوظات.');
+                notify(post.bookmarked ? 'تم حفظ المنشور في المحفوظات.' : 'تمت إزالة المنشور من المحفوظات.', post.bookmarked ? 'success' : 'info');
             } else if (action === 'comment') {
                 const reply = prompt('اكتب ردك:');
                 if (reply && reply.trim()) {
                     post.comments += 1;
-                    notify('تم إضافة ردك بنجاح.');
+                    notify('تم إضافة ردك بنجاح.', 'success');
                 }
             } else if (action === 'share') {
                 navigator.clipboard.writeText(`${location.href}#${post.id}`).catch(() => {});
-                notify('تم نسخ رابط المنشور.');
+                notify('تم نسخ رابط المنشور.', 'success');
             } else if (action === 'delete' && post.owned) {
                 state.posts = state.posts.filter((p) => p.id !== post.id);
-                notify('تم حذف منشورك.');
+                notify('تم حذف منشورك.', 'warning');
             }
 
             saveState();
@@ -1518,6 +1711,24 @@
                 saveState();
                 refreshAll();
             }
+            
+            const userCard = e.target.closest('.user-profile-card');
+            if (userCard && !e.target.closest('.follow-btn')) {
+                const username = userCard.dataset.username;
+                if (username) viewUserProfile(username);
+            }
+            
+            const notifItem = e.target.closest('.notification-item');
+            if (notifItem) {
+                const notifId = notifItem.dataset.notifId;
+                const notif = state.notifications.find(n => n.id === notifId);
+                if (notif && !notif.read) {
+                    notif.read = true;
+                    updateNotificationBadge();
+                    renderNotifications();
+                    saveState();
+                }
+            }
         });
 
         document.getElementById('reset-style-btn').addEventListener('click', () => {
@@ -1537,6 +1748,119 @@
             saveState();
             renderSuggestions();
         });
+        
+        document.getElementById('friends-search')?.addEventListener('input', () => {
+            renderFriends();
+        });
+        
+        document.getElementById('friends-tab-following')?.addEventListener('click', () => {
+            friendsTab = 'following';
+            updateFriendsTabs();
+            renderFriends();
+        });
+        
+        document.getElementById('friends-tab-followers')?.addEventListener('click', () => {
+            friendsTab = 'followers';
+            updateFriendsTabs();
+            renderFriends();
+        });
+        
+        document.getElementById('friends-tab-all')?.addEventListener('click', () => {
+            friendsTab = 'all';
+            updateFriendsTabs();
+            renderFriends();
+        });
+        
+        document.getElementById('chat-send-btn')?.addEventListener('click', () => sendMessage());
+        document.getElementById('chat-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        document.getElementById('new-chat-btn')?.addEventListener('click', () => showNewChatModal());
+        
+        document.getElementById('conversation-list')?.addEventListener('click', (e) => {
+            const convBtn = e.target.closest('.conversation-btn');
+            if (convBtn) {
+                state.activeConversationId = convBtn.dataset.convId;
+                renderConversations();
+                renderChat();
+                saveState();
+            }
+        });
+        
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input?.value.trim();
+            if (!text) return;
+            
+            const convo = state.messages.find(m => m.id === state.activeConversationId);
+            if (convo) {
+                convo.messages.push({ sender: 'me', text, time: nowTime() });
+                input.value = '';
+                renderChat();
+                
+                setTimeout(() => {
+                    convo.messages.push({ sender: 'them', text: 'شكراً لرسالتك! تم استلامها.', time: nowTime() });
+                    notify(`رسالة جديدة من ${convo.with}`, 'message');
+                    renderChat();
+                    renderConversations();
+                    saveState();
+                }, 2000);
+                
+                saveState();
+            }
+        }
+        
+        function showNewChatModal() {
+            const existing = document.getElementById('new-chat-modal');
+            if (existing) existing.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'new-chat-modal';
+            modal.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="w-full max-w-md bg-[#0f1115] border custom-border rounded-2xl overflow-hidden fade-in">
+                    <div class="p-4 flex items-center justify-between border-b custom-border">
+                        <h2 class="text-xl font-bold">محادثة جديدة</h2>
+                        <button onclick="document.getElementById('new-chat-modal').remove()" class="hover-bg p-2 rounded-full">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <input type="text" id="new-chat-search" placeholder="ابحث عن مستخدم..." class="w-full bg-[#202327] rounded-full py-3 px-4 border border-transparent focus:bg-black focus:border-[#1d9bf0]">
+                        <div id="new-chat-results" class="mt-4 max-h-64 overflow-y-auto"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            lucide.createIcons();
+            
+            document.getElementById('new-chat-search')?.addEventListener('input', (e) => {
+                const q = e.target.value.toLowerCase();
+                const results = document.getElementById('new-chat-results');
+                const users = state.suggestions.filter(s => `${s.name} @${s.username}`.toLowerCase().includes(q));
+                
+                if (!users.length) {
+                    results.innerHTML = '<div class="text-center text-gray-500 py-4">لا توجد نتائج</div>';
+                    return;
+                }
+                
+                results.innerHTML = users.map(user => `
+                    <div class="flex items-center gap-3 p-3 hover-bg rounded-xl cursor-pointer new-chat-user" data-username="${user.username}">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold" style="background:${avatarColor(user.avatar)}">${user.avatar}</div>
+                        <div>
+                            <div class="font-bold">${user.name}</div>
+                            <div class="text-sm text-gray-500">@${user.username}</div>
+                        </div>
+                    </div>
+                `).join('');
+            });
+            
+            document.getElementById('new-chat-results')?.addEventListener('click', (e) => {
+                const userEl = e.target.closest('.new-chat-user');
+                if (userEl) {
+                    startChatWith(userEl.dataset.username);
+                    document.getElementById('new-chat-modal')?.remove();
+                }
+            });
+        }
 
         const postInput = document.getElementById('post-input');
         const postImageInput = document.getElementById('post-image-input');
@@ -1842,6 +2166,19 @@
         initAuthFlow();
         updatePublishButton();
         pullRemoteState();
+
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                try {
+                    await fetch('/auth/logout', { method: 'POST' });
+                } catch (e) {
+                    console.log('Logout request failed:', e);
+                }
+                localStorage.removeItem('majra_auth_done');
+                localStorage.removeItem(STORAGE_KEY);
+                window.location.href = '/login';
+            }
+        });
 
         if (state.feedFilter === 'following') {
             document.querySelectorAll('.feed-tab').forEach((t) => {

@@ -114,7 +114,7 @@ app.get('*', (_req, res) => {
 initDb()
     .then(() => {
         app.listen(port, () => {
-            console.log(`Majra server running on port ${port}`);
+            console.log(`GlobalTawasul server running on port ${port}`);
         });
     })
     .catch((error) => {
