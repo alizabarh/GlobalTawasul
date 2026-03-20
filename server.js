@@ -107,6 +107,14 @@ app.post('/social/state', requireApiKey, async (req, res) => {
     return saveState(req, res);
 });
 
+app.get('/login', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+app.get('/logout', (_req, res) => {
+    res.redirect('/login');
+});
+
 app.get('*', (_req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
