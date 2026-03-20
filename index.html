@@ -2214,10 +2214,15 @@
             }
         });
 
-        publishBtn.addEventListener('click', () => {
+        publishBtn.addEventListener('click', async () => {
             const content = postInput.value.trim();
             const image = selectedLocalImage || postImageInput.value.trim();
             if (!content) return;
+
+            // Send to Convex if enabled
+            if (useConvex) {
+                await createPostViaConvex(content, image);
+            }
 
             const avatar = fallbackAvatarLetter(state.currentUser.name);
 
@@ -2437,28 +2442,123 @@
             }
         }
 
-        // Example: Load users from Convex
+        // Convex Integration - Full Data Loading
+        let convexUsers = [];
+        let convexPosts = [];
+        let useConvex = true; // Set to true to enable Convex
+
         async function loadUsersFromConvex() {
             const users = await convexQuery('users:getAll');
-            if (users) {
+            if (users && users.length > 0) {
                 console.log('Users from Convex:', users);
-                // You can update the state here
+                convexUsers = users;
+                // Convert Convex users to app format
+                state.suggestions = users.map(u => ({
+                    id: u._id,
+                    name: u.name,
+                    username: u.username,
+                    avatar: u.name.charAt(0),
+                    bio: u.bio || '',
+                    avatarUrl: u.avatarUrl,
+                    following: false
+                }));
+                renderSuggestions();
             }
         }
 
-        // Example: Load posts from Convex
         async function loadPostsFromConvex() {
             const posts = await convexQuery('posts:getAll');
-            if (posts) {
+            if (posts && posts.length > 0) {
                 console.log('Posts from Convex:', posts);
+                convexPosts = posts;
+                // Convert Convex posts to app format
+                state.posts = posts.map((p, index) => ({
+                    id: String(index),
+                    text: p.content,
+                    image: p.imageUrl || null,
+                    time: new Date(p.createdAt).toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' }),
+                    liked: false,
+                    bookmarked: false,
+                    likes: p.likes,
+                    comments: p.comments,
+                    author: p.authorName || 'مستخدم',
+                    username: p.authorUsername || '@user',
+                    avatar: (p.authorName || 'م').charAt(0),
+                    avatarUrl: p.authorAvatar,
+                    owned: false,
+                    fromFollowing: false
+                }));
+                renderFeed();
+                renderTrends();
+            }
+        }
+
+        async function loadAllDataFromConvex() {
+            if (!useConvex) return;
+
+            setDbStatus('جاري تحميل البيانات من Convex...', 'warn');
+
+            try {
+                await Promise.all([
+                    loadUsersFromConvex(),
+                    loadPostsFromConvex()
+                ]);
+
+                setDbStatus('تم التحميل من Convex بنجاح', 'ok');
+                refreshAll();
+            } catch (error) {
+                console.error('Error loading from Convex:', error);
+                setDbStatus('فشل التحميل من Convex، استخدام البيانات المحلية', 'warn');
+            }
+        }
+
+        // Create post via Convex
+        async function createPostViaConvex(content, imageUrl = '') {
+            if (!useConvex || !state.currentUser) return;
+
+            const currentUserId = convexUsers.find(u => u.username === state.currentUser.username)?._id;
+            if (!currentUserId) {
+                console.error('Current user not found in Convex');
+                return;
+            }
+
+            const result = await convexMutation('posts:create', {
+                userId: currentUserId,
+                content,
+                imageUrl
+            });
+
+            if (result) {
+                // Reload posts
+                await loadPostsFromConvex();
+                notify('تم نشر المنشور!');
+            }
+        }
+
+        // Follow user via Convex
+        async function followUserViaConvex(targetUserId) {
+            if (!useConvex) return;
+
+            const currentUserId = convexUsers.find(u => u.username === state.currentUser.username)?._id;
+            if (!currentUserId) return;
+
+            const result = await convexMutation('followers:follow', {
+                followerId: currentUserId,
+                followingId: targetUserId
+            });
+
+            if (result) {
+                notify('تم إرسال طلب المتابعة!');
             }
         }
 
         // Call on page load
         document.addEventListener('DOMContentLoaded', () => {
-            // Uncomment to enable Convex integration
-            // loadUsersFromConvex();
-            // loadPostsFromConvex();
+            if (useConvex) {
+                loadAllDataFromConvex();
+                // Auto-refresh every 30 seconds
+                setInterval(loadAllDataFromConvex, 30000);
+            }
         });
     </script>
 </body>
