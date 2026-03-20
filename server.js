@@ -1,3 +1,4 @@
+require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
@@ -45,13 +46,69 @@ async function initDb() {
         return;
     }
 
+    // Create tables for users, followers, messages, and posts
     await pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password_hash VARCHAR(255),
+            name VARCHAR(100) NOT NULL,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            bio TEXT DEFAULT '',
+            avatar_url TEXT,
+            cover_url TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS followers (
+            id SERIAL PRIMARY KEY,
+            follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            following_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            status VARCHAR(20) DEFAULT 'accepted', -- pending, accepted, rejected
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(follower_id, following_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS messages (
+            id SERIAL PRIMARY KEY,
+            sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            receiver_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            content TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            read_at TIMESTAMPTZ
+        );
+
+        CREATE TABLE IF NOT EXISTS posts (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            content TEXT NOT NULL,
+            image_url TEXT,
+            likes INTEGER DEFAULT 0,
+            comments INTEGER DEFAULT 0,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
         CREATE TABLE IF NOT EXISTS app_state (
             state_key TEXT PRIMARY KEY,
             state_json JSONB NOT NULL,
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
     `);
+
+    // Insert demo users if none exist
+    const usersExist = await pool.query('SELECT COUNT(*) FROM users');
+    if (parseInt(usersExist.rows[0].count) === 0) {
+        await pool.query(`
+            INSERT INTO users (email, name, username, bio, avatar_url) VALUES
+            ('user1@example.com', 'أحمد محمد', 'ahmed_m', 'مطور ويب ومتحمس للتقنية', 'https://i.pravatar.cc/150?img=1'),
+            ('user2@example.com', 'سارة أحمد', 'sara_ahmed', 'مصممة جرافيك وأحب الفن', 'https://i.pravatar.cc/150?img=5'),
+            ('user3@example.com', 'محمد علي', 'mohammed_a', 'صحفي وكاتب محتوى', 'https://i.pravatar.cc/150?img=3'),
+            ('user4@example.com', 'فاطمة حسن', 'fatima_h', 'طالبة علوم حاسوب', 'https://i.pravatar.cc/150?img=9'),
+            ('user5@example.com', 'عمر خالد', 'omar_k', 'مدون تقني', 'https://i.pravatar.cc/150?img=11');
+        `);
+        console.log('Demo users created');
+    }
 }
 
 app.get('/health', async (_req, res) => {
@@ -107,6 +164,273 @@ app.post('/social/state', requireApiKey, async (req, res) => {
     return saveState(req, res);
 });
 
+// Users API
+app.get('/api/users', async (_req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.name, u.username, u.bio, u.avatar_url, u.cover_url,
+                   (SELECT COUNT(*) FROM followers WHERE following_id = u.id AND status = 'accepted') as followers_count,
+                   (SELECT COUNT(*) FROM followers WHERE follower_id = u.id AND status = 'accepted') as following_count
+            FROM users u
+            ORDER BY u.created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.name, u.username, u.bio, u.avatar_url, u.cover_url,
+                   (SELECT COUNT(*) FROM followers WHERE following_id = u.id AND status = 'accepted') as followers_count,
+                   (SELECT COUNT(*) FROM followers WHERE follower_id = u.id AND status = 'accepted') as following_count
+            FROM users u WHERE u.id = $1
+        `, [req.params.id]);
+        if (!result.rows.length) return res.status(404).json({ error: 'User not found' });
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Followers API
+app.get('/api/followers/:userId', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.name, u.username, u.avatar_url, f.status, f.created_at
+            FROM followers f
+            JOIN users u ON f.follower_id = u.id
+            WHERE f.following_id = $1 AND f.status = 'accepted'
+            ORDER BY f.created_at DESC
+        `, [req.params.userId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/following/:userId', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.name, u.username, u.avatar_url, f.status, f.created_at
+            FROM followers f
+            JOIN users u ON f.following_id = u.id
+            WHERE f.follower_id = $1 AND f.status = 'accepted'
+            ORDER BY f.created_at DESC
+        `, [req.params.userId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/follow-requests/:userId', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.name, u.username, u.avatar_url, f.id as request_id, f.created_at
+            FROM followers f
+            JOIN users u ON f.follower_id = u.id
+            WHERE f.following_id = $1 AND f.status = 'pending'
+            ORDER BY f.created_at DESC
+        `, [req.params.userId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/follow', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    const { followerId, followingId } = req.body;
+    if (!followerId || !followingId) return res.status(400).json({ error: 'Missing IDs' });
+    try {
+        await pool.query(`
+            INSERT INTO followers (follower_id, following_id, status)
+            VALUES ($1, $2, 'pending')
+            ON CONFLICT (follower_id, following_id) DO NOTHING
+        `, [followerId, followingId]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/follow/accept', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    const { followerId, followingId } = req.body;
+    try {
+        await pool.query(`
+            UPDATE followers SET status = 'accepted'
+            WHERE follower_id = $1 AND following_id = $2
+        `, [followerId, followingId]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/follow/reject', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    const { followerId, followingId } = req.body;
+    try {
+        await pool.query(`
+            DELETE FROM followers
+            WHERE follower_id = $1 AND following_id = $2
+        `, [followerId, followingId]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/unfollow', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    const { followerId, followingId } = req.body;
+    try {
+        await pool.query(`
+            DELETE FROM followers
+            WHERE follower_id = $1 AND following_id = $2
+        `, [followerId, followingId]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Messages API
+app.get('/api/conversations/:userId', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT DISTINCT ON (other_user_id)
+                u.id as other_user_id,
+                u.name,
+                u.username,
+                u.avatar_url,
+                m.content as last_message,
+                m.created_at as last_message_time,
+                (SELECT COUNT(*) FROM messages WHERE receiver_id = $1 AND sender_id = u.id AND read_at IS NULL) as unread_count
+            FROM (
+                SELECT sender_id as other_id FROM messages WHERE receiver_id = $1
+                UNION
+                SELECT receiver_id as other_id FROM messages WHERE sender_id = $1
+            ) conv
+            JOIN users u ON u.id = conv.other_id
+            LEFT JOIN messages m ON (
+                (m.sender_id = $1 AND m.receiver_id = u.id) OR
+                (m.receiver_id = $1 AND m.sender_id = u.id)
+            ) AND m.id = (
+                SELECT id FROM messages
+                WHERE (sender_id = $1 AND receiver_id = u.id) OR (receiver_id = $1 AND sender_id = u.id)
+                ORDER BY created_at DESC LIMIT 1
+            )
+            ORDER BY u.id, m.created_at DESC
+        `, [req.params.userId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/messages/:userId/:otherId', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT m.*, u.name as sender_name, u.avatar_url as sender_avatar
+            FROM messages m
+            JOIN users u ON m.sender_id = u.id
+            WHERE (m.sender_id = $1 AND m.receiver_id = $2) OR (m.sender_id = $2 AND m.receiver_id = $1)
+            ORDER BY m.created_at ASC
+        `, [req.params.userId, req.params.otherId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/messages', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    const { senderId, receiverId, content } = req.body;
+    if (!senderId || !receiverId || !content) return res.status(400).json({ error: 'Missing data' });
+    try {
+        const result = await pool.query(`
+            INSERT INTO messages (sender_id, receiver_id, content)
+            VALUES ($1, $2, $3) RETURNING *
+        `, [senderId, receiverId, content]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/messages/read', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    const { userId, senderId } = req.body;
+    try {
+        await pool.query(`
+            UPDATE messages SET read_at = NOW()
+            WHERE receiver_id = $1 AND sender_id = $2 AND read_at IS NULL
+        `, [userId, senderId]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Posts API
+app.get('/api/posts', async (_req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT p.*, u.name as author_name, u.username as author_username, u.avatar_url as author_avatar
+            FROM posts p
+            JOIN users u ON p.user_id = u.id
+            ORDER BY p.created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/posts/user/:userId', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    try {
+        const result = await pool.query(`
+            SELECT p.*, u.name as author_name, u.username as author_username, u.avatar_url as author_avatar
+            FROM posts p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.user_id = $1
+            ORDER BY p.created_at DESC
+        `, [req.params.userId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/posts', async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
+    const { userId, content, imageUrl } = req.body;
+    if (!userId || !content) return res.status(400).json({ error: 'Missing data' });
+    try {
+        const result = await pool.query(`
+            INSERT INTO posts (user_id, content, image_url)
+            VALUES ($1, $2, $3) RETURNING *
+        `, [userId, content, imageUrl]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/login', (_req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
 });
@@ -122,10 +446,17 @@ app.get('*', (_req, res) => {
 initDb()
     .then(() => {
         app.listen(port, () => {
-            console.log(`GlobalTawasul server running on port ${port}`);
+            if (pool) {
+                console.log(`GlobalTawasul server running on port ${port} (with database)`);
+            } else {
+                console.log(`GlobalTawasul server running on port ${port} (local mode)`);
+            }
         });
     })
     .catch((error) => {
-        console.error('Failed to initialize database:', error.message);
-        process.exit(1);
+        console.warn('Database initialization failed:', error.message);
+        console.log('Starting server in local mode...');
+        app.listen(port, () => {
+            console.log(`GlobalTawasul server running on port ${port} (local mode)`);
+        });
     });
