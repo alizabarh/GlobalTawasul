@@ -183,6 +183,11 @@
                     <i data-lucide="users"></i>
                     <span class="hidden xl:inline">الأصدقاء</span>
                 </button>
+                <button data-view="requests-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8 relative">
+                    <i data-lucide="user-check"></i>
+                    <span class="hidden xl:inline">طلبات المتابعة</span>
+                    <span id="requests-badge" class="absolute xl:static top-1 right-1 xl:mr-2 text-[10px] bg-[#f91880] px-1.5 py-0.5 rounded-full hidden">0</span>
+                </button>
                 <button data-view="settings-view" class="nav-btn flex items-center gap-4 p-3 text-xl rounded-full hover-bg w-max xl:pr-4 xl:pl-8">
                     <i data-lucide="settings"></i>
                     <span class="hidden xl:inline">الإعدادات</span>
@@ -337,6 +342,14 @@
                     <div id="friends-summary" class="text-sm text-gray-500 mt-3"></div>
                 </div>
                 <div id="friends-list" class="divide-y custom-border"></div>
+            </section>
+
+            <section id="requests-view" class="app-view hidden-view">
+                <div class="p-4 border-b custom-border">
+                    <h2 class="text-xl font-bold">طلبات المتابعة</h2>
+                    <p class="text-sm text-gray-500">مراجعة طلبات متابعة الحسابات.</p>
+                </div>
+                <div id="requests-list" class="divide-y custom-border"></div>
             </section>
 
             <section id="settings-view" class="app-view hidden-view">
@@ -633,6 +646,9 @@
                 { id: 'n2', text: 'استكشف المنشورات وتفاعل مع الآخرين.', type: 'info', icon: 'bell', time: 'الآن', read: false },
                 { id: 'n3', text: 'تابع حسابات أخرى لرؤية منشوراتهم.', type: 'follow', icon: 'user-plus', time: 'الآن', read: false }
             ],
+            followRequests: [
+                { id: 'fr1', from: 's2', fromName: 'أكاديمية البرمجة', fromUsername: 'code_academy', fromAvatar: 'ب', time: 'الآن', status: 'pending' }
+            ],
             messages: [
                 {
                     id: 'm1',
@@ -683,7 +699,8 @@
                     currentUser: {
                         ...structuredClone(defaultState).currentUser,
                         ...(parsed.currentUser || {})
-                    }
+                    },
+                    followRequests: parsed.followRequests || defaultState.followRequests
                 };
             } catch {
                 return structuredClone(defaultState);
@@ -1144,6 +1161,7 @@
                 'profile-view': 'الملف الشخصي',
                 'bookmarks-view': 'المحفوظات',
                 'friends-view': 'الأصدقاء',
+                'requests-view': 'طلبات المتابعة',
                 'settings-view': 'الإعدادات'
             };
 
@@ -1169,6 +1187,11 @@
 
             if (viewId === 'friends-view') {
                 renderFriends();
+            }
+
+            if (viewId === 'requests-view') {
+                renderFollowRequests();
+                updateRequestsBadge();
             }
 
             if (viewId === 'settings-view') {
@@ -1493,8 +1516,12 @@
         function toggleFollowFromModal(userId) {
             const user = state.suggestions.find(s => s.id === userId);
             if (user) {
-                user.following = !user.following;
-                notify(user.following ? `بدأت متابعة ${user.name}.` : `أوقفت متابعة ${user.name}.`);
+                if (user.following) {
+                    user.following = false;
+                    notify(`أوقفت متابعة ${user.name}.`);
+                } else {
+                    sendFollowRequest(user.id, user.name, user.username, user.avatar);
+                }
                 saveState();
                 renderFriends();
                 renderSuggestions();
@@ -1557,6 +1584,115 @@
                     }
                 }
             });
+        }
+        
+        function updateRequestsBadge() {
+            const pending = state.followRequests.filter(r => r.status === 'pending').length;
+            const badge = document.getElementById('requests-badge');
+            if (badge) {
+                if (pending > 0) {
+                    badge.classList.remove('hidden');
+                    badge.textContent = pending > 99 ? '99+' : String(pending);
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+        
+        function renderFollowRequests() {
+            const list = document.getElementById('requests-list');
+            const pending = state.followRequests.filter(r => r.status === 'pending');
+            
+            if (pending.length === 0) {
+                list.innerHTML = '<div class="p-8 text-center text-gray-500">لا توجد طلبات متابعة جديدة.</div>';
+                lucide.createIcons();
+                return;
+            }
+            
+            list.innerHTML = pending.map(req => `
+                <div class="p-4 hover-bg flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold" style="background:${avatarColor(req.fromAvatar)}">${req.fromAvatar}</div>
+                        <div>
+                            <div class="font-bold">${req.fromName}</div>
+                            <div class="text-sm text-gray-500">@${req.fromUsername}</div>
+                            <div class="text-xs text-gray-600 mt-1">منذ ${req.time}</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="acceptFollowRequest('${req.id}')" class="bg-[#00ba7c] text-white px-4 py-2 rounded-full font-bold text-sm hover:brightness-110">قبول</button>
+                        <button onclick="rejectFollowRequest('${req.id}')" class="bg-[#2f3336] text-white px-4 py-2 rounded-full font-bold text-sm hover:bg-[#3f4446]">رفض</button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+        
+        function acceptFollowRequest(reqId) {
+            const req = state.followRequests.find(r => r.id === reqId);
+            if (req) {
+                req.status = 'accepted';
+                // Add to suggestions as following
+                const user = state.suggestions.find(s => s.id === req.from);
+                if (user) {
+                    user.following = true;
+                } else {
+                    state.suggestions.push({
+                        id: req.from,
+                        name: req.fromName,
+                        username: req.fromUsername,
+                        avatar: req.fromAvatar,
+                        following: true
+                    });
+                }
+                notify(`${req.fromName} أصبح يتابعك الآن.`, 'success');
+                notify(`بدأت متابعة ${req.fromName}.`, 'follow');
+                updateRequestsBadge();
+                renderFollowRequests();
+                renderFriends();
+                saveState();
+            }
+        }
+        
+        function rejectFollowRequest(reqId) {
+            const req = state.followRequests.find(r => r.id === reqId);
+            if (req) {
+                req.status = 'rejected';
+                notify(`تم رفض طلب المتابعة من ${req.fromName}.`, 'info');
+                updateRequestsBadge();
+                renderFollowRequests();
+                saveState();
+            }
+        }
+        
+        function sendFollowRequest(userId, userName, userUsername, userAvatar) {
+            // Check if already following or request already sent
+            const existing = state.followRequests.find(r => r.from === userId && r.status === 'pending');
+            if (existing) {
+                notify('لقد أرسلت طلب متابعة سابقاً.', 'warning');
+                return;
+            }
+            
+            const user = state.suggestions.find(s => s.id === userId);
+            if (user && user.following) {
+                notify(`أنت تتابع ${userName} بالفعل.`, 'info');
+                return;
+            }
+            
+            // Add follow request
+            state.followRequests.push({
+                id: `fr_${Date.now()}`,
+                from: userId,
+                fromName: userName,
+                fromUsername: userUsername,
+                fromAvatar: userAvatar,
+                time: 'الآن',
+                status: 'pending'
+            });
+            
+            notify(`تم إرسال طلب متابعة إلى ${userName}.`, 'success');
+            updateRequestsBadge();
+            saveState();
         }
         
         function renderFriends() {
@@ -1624,6 +1760,7 @@
             renderSettings();
             renderStats();
             updateNotificationBadge();
+            updateRequestsBadge();
             setActiveView(state.activeView || 'home-view');
             lucide.createIcons();
         }
@@ -1706,8 +1843,12 @@
                 const id = followBtn.dataset.suggestionId;
                 const user = state.suggestions.find((s) => s.id === id);
                 if (!user) return;
-                user.following = !user.following;
-                notify(user.following ? `بدأت متابعة ${user.name}.` : `أوقفت متابعة ${user.name}.`);
+                if (user.following) {
+                    user.following = false;
+                    notify(`أوقفت متابعة ${user.name}.`);
+                } else {
+                    sendFollowRequest(user.id, user.name, user.username, user.avatar);
+                }
                 saveState();
                 refreshAll();
             }
