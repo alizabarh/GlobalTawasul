@@ -3,6 +3,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const Database = require('better-sqlite3');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,12 +11,20 @@ const port = process.env.PORT || 3000;
 const databaseUrl = process.env.DATABASE_URL || '';
 const requiredApiKey = (process.env.API_KEY || '').trim();
 
-const pool = databaseUrl
+// PostgreSQL pool (for production)
+const pool = databaseUrl && !databaseUrl.includes('sqlite')
     ? new Pool({
         connectionString: databaseUrl,
         ssl: { rejectUnauthorized: false },
     })
     : null;
+
+// SQLite database (for local development)
+let sqliteDb = null;
+if (!pool) {
+    sqliteDb = new Database('globaltawasul.db');
+    console.log('Using SQLite database: globaltawasul.db');
+}
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
@@ -41,12 +50,85 @@ function requireApiKey(req, res, next) {
 }
 
 async function initDb() {
+    // SQLite initialization
+    if (sqliteDb) {
+        sqliteDb.exec(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT,
+                name TEXT NOT NULL,
+                username TEXT UNIQUE NOT NULL,
+                bio TEXT DEFAULT '',
+                avatar_url TEXT,
+                cover_url TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS followers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                following_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                status TEXT DEFAULT 'accepted',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(follower_id, following_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                receiver_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                read_at DATETIME
+            );
+
+            CREATE TABLE IF NOT EXISTS posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                image_url TEXT,
+                likes INTEGER DEFAULT 0,
+                comments INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS app_state (
+                state_key TEXT PRIMARY KEY,
+                state_json TEXT NOT NULL,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        // Insert demo users if none exist
+        const count = sqliteDb.prepare('SELECT COUNT(*) as count FROM users').get();
+        if (count.count === 0) {
+            const insert = sqliteDb.prepare(`
+                INSERT INTO users (email, name, username, bio, avatar_url) VALUES
+                (?, ?, ?, ?, ?)
+            `);
+            const users = [
+                ['user1@example.com', 'أحمد محمد', 'ahmed_m', 'مطور ويب ومتحمس للتقنية', 'https://i.pravatar.cc/150?img=1'],
+                ['user2@example.com', 'سارة أحمد', 'sara_ahmed', 'مصممة جرافيك وأحب الفن', 'https://i.pravatar.cc/150?img=5'],
+                ['user3@example.com', 'محمد علي', 'mohammed_a', 'صحفي وكاتب محتوى', 'https://i.pravatar.cc/150?img=3'],
+                ['user4@example.com', 'فاطمة حسن', 'fatima_h', 'طالبة علوم حاسوب', 'https://i.pravatar.cc/150?img=9'],
+                ['user5@example.com', 'عمر خالد', 'omar_k', 'مدون تقني', 'https://i.pravatar.cc/150?img=11']
+            ];
+            for (const user of users) {
+                insert.run(...user);
+            }
+            console.log('Demo users created in SQLite');
+        }
+        return;
+    }
+
+    // PostgreSQL initialization
     if (!pool) {
         console.warn('DATABASE_URL is not set. Running without remote DB.');
         return;
     }
 
-    // Create tables for users, followers, messages, and posts
     await pool.query(`
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -65,7 +147,7 @@ async function initDb() {
             id SERIAL PRIMARY KEY,
             follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
             following_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            status VARCHAR(20) DEFAULT 'accepted', -- pending, accepted, rejected
+            status VARCHAR(20) DEFAULT 'accepted',
             created_at TIMESTAMPTZ DEFAULT NOW(),
             UNIQUE(follower_id, following_id)
         );
@@ -96,7 +178,6 @@ async function initDb() {
         );
     `);
 
-    // Insert demo users if none exist
     const usersExist = await pool.query('SELECT COUNT(*) FROM users');
     if (parseInt(usersExist.rows[0].count) === 0) {
         await pool.query(`
@@ -107,7 +188,7 @@ async function initDb() {
             ('user4@example.com', 'فاطمة حسن', 'fatima_h', 'طالبة علوم حاسوب', 'https://i.pravatar.cc/150?img=9'),
             ('user5@example.com', 'عمر خالد', 'omar_k', 'مدون تقني', 'https://i.pravatar.cc/150?img=11');
         `);
-        console.log('Demo users created');
+        console.log('Demo users created in PostgreSQL');
     }
 }
 
@@ -166,8 +247,18 @@ app.post('/social/state', requireApiKey, async (req, res) => {
 
 // Users API
 app.get('/api/users', async (_req, res) => {
-    if (!pool) return res.status(503).json({ error: 'Database is not configured' });
     try {
+        if (sqliteDb) {
+            const users = sqliteDb.prepare(`
+                SELECT u.id, u.name, u.username, u.bio, u.avatar_url, u.cover_url,
+                       (SELECT COUNT(*) FROM followers WHERE following_id = u.id AND status = 'accepted') as followers_count,
+                       (SELECT COUNT(*) FROM followers WHERE follower_id = u.id AND status = 'accepted') as following_count
+                FROM users u
+                ORDER BY u.created_at DESC
+            `).all();
+            return res.json(users);
+        }
+        if (!pool) return res.status(503).json({ error: 'Database is not configured' });
         const result = await pool.query(`
             SELECT u.id, u.name, u.username, u.bio, u.avatar_url, u.cover_url,
                    (SELECT COUNT(*) FROM followers WHERE following_id = u.id AND status = 'accepted') as followers_count,
