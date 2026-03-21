@@ -1050,9 +1050,34 @@
         function loadState() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
+                
+                // Get user data from login storage keys
+                const storedUserId = localStorage.getItem('userId');
+                const storedUserName = localStorage.getItem('userName');
+                const storedUserUsername = localStorage.getItem('userUsername');
+                const storedUserEmail = localStorage.getItem('userEmail');
+                const storedUserAvatar = localStorage.getItem('userAvatar');
+                
+                // If we have login data but no state, create state with user data
+                if (!raw && storedUserName) {
+                    return {
+                        ...structuredClone(defaultState),
+                        currentUser: {
+                            ...structuredClone(defaultState).currentUser,
+                            name: storedUserName,
+                            username: storedUserUsername || '',
+                            bio: '',
+                            avatarImage: storedUserAvatar || '',
+                            coverImage: ''
+                        }
+                    };
+                }
+                
                 if (!raw) return structuredClone(defaultState);
                 const parsed = JSON.parse(raw);
-                return {
+                
+                // Merge with login storage data if available
+                const mergedState = {
                     ...structuredClone(defaultState),
                     ...parsed,
                     currentUser: {
@@ -1061,6 +1086,15 @@
                     },
                     followRequests: parsed.followRequests || defaultState.followRequests
                 };
+                
+                // Override with login storage data if available
+                if (storedUserName) {
+                    mergedState.currentUser.name = storedUserName;
+                    mergedState.currentUser.username = storedUserUsername || mergedState.currentUser.username;
+                    mergedState.currentUser.avatarImage = storedUserAvatar || mergedState.currentUser.avatarImage;
+                }
+                
+                return mergedState;
             } catch {
                 return structuredClone(defaultState);
             }
