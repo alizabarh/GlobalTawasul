@@ -46,4 +46,13 @@ export default defineSchema({
         .index("by_sender", ["senderId"])
         .index("by_receiver", ["receiverId"])
         .index("by_conversation", ["senderId", "receiverId"]),
+
+    favorites: defineTable({
+        userId: v.id("users"),
+        postId: v.id("posts"),
+        createdAt: v.number(),
+    })
+        .index("by_user", ["userId"])
+        .index("by_post", ["postId"])
+        .index("by_user_post", ["userId", "postId"]),
 });
