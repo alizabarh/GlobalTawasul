@@ -283,10 +283,10 @@
             <form id="form-login" onsubmit="handleLogin(event)">
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm mb-2" style="color: var(--app-text-secondary);">البريد الإلكتروني</label>
-                        <input type="email" id="login-email" required
+                        <label class="block text-sm mb-2" style="color: var(--app-text-secondary);">البريد الإلكتروني أو اسم المستخدم</label>
+                        <input type="text" id="login-email" required
                             class="auth-input w-full"
-                            placeholder="example@email.com">
+                            placeholder="email@.com أو username">
                     </div>
                     <div>
                         <label class="block text-sm mb-2" style="color: var(--app-text-secondary);">كلمة المرور</label>
@@ -438,11 +438,11 @@
             setLoading(true);
             hideMessage();
 
-            const email = document.getElementById('login-email').value;
+            const emailOrUsername = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
 
             try {
-                const result = await apiCall('/api/auth/login', 'POST', { email, password });
+                const result = await apiCall('/api/auth/login', 'POST', { emailOrUsername, password });
 
                 // Store session in localStorage
                 localStorage.setItem('userId', result.userId);

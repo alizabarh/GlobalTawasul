@@ -390,25 +390,28 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// Auth API - Login
+// Auth API - Login (with email or username)
 app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { emailOrUsername, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ error: 'البريد الإلكتروني وكلمة المرور مطلوبان' });
+    if (!emailOrUsername || !password) {
+        return res.status(400).json({ error: 'البريد الإلكتروني أو اسم المستخدم وكلمة المرور مطلوبان' });
     }
 
     try {
         if (sqliteDb) {
-            const user = sqliteDb.prepare('SELECT * FROM users WHERE email = ?').get(email);
+            // Search by email OR username
+            const user = sqliteDb.prepare(
+                'SELECT * FROM users WHERE email = ? OR username = ?'
+            ).get(emailOrUsername, emailOrUsername);
             
             if (!user) {
-                return res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+                return res.status(401).json({ error: 'البريد الإلكتروني أو اسم المستخدم أو كلمة المرور غير صحيحة' });
             }
 
             const hashedInput = hashPassword(password);
             if (user.password_hash !== hashedInput) {
-                return res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+                return res.status(401).json({ error: 'البريد الإلكتروني أو اسم المستخدم أو كلمة المرور غير صحيحة' });
             }
 
             return res.json({
@@ -421,16 +424,20 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         if (pool) {
-            const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+            // Search by email OR username
+            const result = await pool.query(
+                'SELECT * FROM users WHERE email = $1 OR username = $1',
+                [emailOrUsername]
+            );
             const user = result.rows[0];
 
             if (!user) {
-                return res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+                return res.status(401).json({ error: 'البريد الإلكتروني أو اسم المستخدم أو كلمة المرور غير صحيحة' });
             }
 
             const hashedInput = hashPassword(password);
             if (user.password_hash !== hashedInput) {
-                return res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+                return res.status(401).json({ error: 'البريد الإلكتروني أو اسم المستخدم أو كلمة المرور غير صحيحة' });
             }
 
             return res.json({
