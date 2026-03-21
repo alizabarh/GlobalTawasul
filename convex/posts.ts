@@ -6,7 +6,7 @@ export const getAll = query({
     handler: async (ctx) => {
         const posts = await ctx.db
             .query("posts")
-            .withIndex("by_created", (q) => q.desc())
+            .order("desc")
             .take(100);
 
         // Get user info for each post
