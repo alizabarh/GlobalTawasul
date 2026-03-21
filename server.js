@@ -245,6 +245,144 @@ app.post('/social/state', requireApiKey, async (req, res) => {
     return saveState(req, res);
 });
 
+// Simple hash function (same as convex/auth.ts)
+function hashPassword(password) {
+    let hash = 0;
+    for (let i = 0; i < password.length; i++) {
+        const char = password.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return "hash_" + Math.abs(hash).toString(16);
+}
+
+// Auth API - Register
+app.post('/api/auth/register', async (req, res) => {
+    const { email, password, name, username } = req.body;
+    
+    if (!email || !password || !name || !username) {
+        return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
+    }
+
+    try {
+        if (sqliteDb) {
+            // Check if email exists
+            const existingEmail = sqliteDb.prepare('SELECT id FROM users WHERE email = ?').get(email);
+            if (existingEmail) {
+                return res.status(400).json({ error: 'البريد الإلكتروني مستخدم بالفعل' });
+            }
+
+            // Check if username exists
+            const existingUsername = sqliteDb.prepare('SELECT id FROM users WHERE username = ?').get(username);
+            if (existingUsername) {
+                return res.status(400).json({ error: 'اسم المستخدم مستخدم بالفعل' });
+            }
+
+            // Create user
+            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+            const result = sqliteDb.prepare(`
+                INSERT INTO users (email, password_hash, name, username, avatar_url)
+                VALUES (?, ?, ?, ?, ?)
+            `).run(email, hashPassword(password), name, username, avatarUrl);
+
+            return res.status(201).json({
+                userId: result.lastInsertRowid,
+                email,
+                name,
+                username,
+                avatarUrl
+            });
+        }
+
+        if (pool) {
+            // Check if email exists
+            const existingEmail = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+            if (existingEmail.rows.length) {
+                return res.status(400).json({ error: 'البريد الإلكتروني مستخدم بالفعل' });
+            }
+
+            // Check if username exists
+            const existingUsername = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+            if (existingUsername.rows.length) {
+                return res.status(400).json({ error: 'اسم المستخدم مستخدم بالفعل' });
+            }
+
+            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+            const result = await pool.query(`
+                INSERT INTO users (email, password_hash, name, username, avatar_url)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING id, email, name, username, avatar_url
+            `, [email, hashPassword(password), name, username, avatarUrl]);
+
+            return res.status(201).json(result.rows[0]);
+        }
+
+        return res.status(503).json({ error: 'Database is not configured' });
+    } catch (error) {
+        console.error('Register error:', error);
+        return res.status(500).json({ error: 'حدث خطأ أثناء إنشاء الحساب' });
+    }
+});
+
+// Auth API - Login
+app.post('/api/auth/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'البريد الإلكتروني وكلمة المرور مطلوبان' });
+    }
+
+    try {
+        if (sqliteDb) {
+            const user = sqliteDb.prepare('SELECT * FROM users WHERE email = ?').get(email);
+            
+            if (!user) {
+                return res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+            }
+
+            const hashedInput = hashPassword(password);
+            if (user.password_hash !== hashedInput) {
+                return res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+            }
+
+            return res.json({
+                userId: user.id,
+                email: user.email,
+                name: user.name,
+                username: user.username,
+                avatarUrl: user.avatar_url
+            });
+        }
+
+        if (pool) {
+            const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+            const user = result.rows[0];
+
+            if (!user) {
+                return res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+            }
+
+            const hashedInput = hashPassword(password);
+            if (user.password_hash !== hashedInput) {
+                return res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+            }
+
+            return res.json({
+                userId: user.id,
+                email: user.email,
+                name: user.name,
+                username: user.username,
+                avatarUrl: user.avatar_url
+            });
+        }
+
+        return res.status(503).json({ error: 'Database is not configured' });
+    } catch (error) {
+        console.error('Login error:', error);
+        return res.status(500).json({ error: 'حدث خطأ أثناء تسجيل الدخول' });
+    }
+});
+
 // Users API
 app.get('/api/users', async (_req, res) => {
     try {

@@ -23,3 +23,15 @@ npm-debug.log*
 
 # Local MCP config (contains API keys)
 opencode.json
+
+.env.local
+
+# Database files
+*.db
+
+# Log files
+*.log
+
+# Command artifacts
+nul
+null

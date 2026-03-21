@@ -12,6 +12,7 @@ export const seedUsers = internalMutation({
         const users = [
             {
                 email: "user1@example.com",
+                passwordHash: "hashed_password_123",
                 name: "أحمد محمد",
                 username: "ahmed_m",
                 bio: "مطور ويب ومتحمس للتقنية",
@@ -21,6 +22,7 @@ export const seedUsers = internalMutation({
             },
             {
                 email: "user2@example.com",
+                passwordHash: "hashed_password_123",
                 name: "سارة أحمد",
                 username: "sara_ahmed",
                 bio: "مصممة جرافيك وأحب الفن",
@@ -30,6 +32,7 @@ export const seedUsers = internalMutation({
             },
             {
                 email: "user3@example.com",
+                passwordHash: "hashed_password_123",
                 name: "محمد علي",
                 username: "mohammed_a",
                 bio: "صحفي وكاتب محتوى",
@@ -39,6 +42,7 @@ export const seedUsers = internalMutation({
             },
             {
                 email: "user4@example.com",
+                passwordHash: "hashed_password_123",
                 name: "فاطمة حسن",
                 username: "fatima_h",
                 bio: "طالبة علوم حاسوب",
@@ -48,6 +52,7 @@ export const seedUsers = internalMutation({
             },
             {
                 email: "user5@example.com",
+                passwordHash: "hashed_password_123",
                 name: "عمر خالد",
                 username: "omar_k",
                 bio: "مدون تقني",
