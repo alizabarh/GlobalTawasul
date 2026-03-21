@@ -2656,10 +2656,17 @@
             }
         })();
 
-        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
             if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-                await supabase.auth.signOut();
-                window.location.href = '/login';
+                // Clear all user data from localStorage
+                localStorage.removeItem('userId');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('userUsername');
+                localStorage.removeItem('userAvatar');
+                
+                // Redirect to login page
+                window.location.href = '/login.html';
             }
         });
 
@@ -2826,11 +2833,14 @@
 
         // Logout function
         function logout() {
-            localStorage.removeItem('userId');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userName');
-            localStorage.removeItem('userAvatar');
-            window.location.href = '/login.html';
+            if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                localStorage.removeItem('userId');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('userUsername');
+                localStorage.removeItem('userAvatar');
+                window.location.href = '/login.html';
+            }
         }
 
         // Get current user info
